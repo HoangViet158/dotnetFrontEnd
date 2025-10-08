@@ -3,7 +3,9 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import SaleManager from "../layouts/SaleManager";
 import Admin from "../layouts/Admin";
 import ManagerUser from "../components/admin/ManagerUser/ManagerUser";
-
+import ManagerCustomer from "../components/admin/ManagerCustomer/ManagerCustomer";
+import ManagerProduct from "../components/admin/ManageProduct/ManageProduct";
+import ManagerInventory from "../components/admin/ManagerInventory/ManagerInventory";
 function App() {
   return (
     <BrowserRouter>
@@ -11,6 +13,18 @@ function App() {
         <Route path="/" element={<SaleManager />}></Route>
         <Route path="/admin" element={<Admin />}>
           <Route path="/admin/managerUser" element={<ManagerUser />}></Route>
+          <Route
+            path="/admin/managerCustomer"
+            element={<ManagerCustomer />}
+          ></Route>
+          <Route
+            path="/admin/managerProduct"
+            element={<ManagerProduct />}
+          ></Route>
+          <Route
+            path="/admin/managerInventory"
+            element={<ManagerInventory />}
+          ></Route>
         </Route>
       </Routes>
     </BrowserRouter>

@@ -10,7 +10,7 @@ const Login = () => {
     console.log(email);
     console.log(password);
     const res = await LoginAPI({
-      email,
+      username :email,
       password,
     });
     console.log(res);
