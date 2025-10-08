@@ -6,20 +6,15 @@ const { Option } = Select;
 interface ModalAddNewUserProps {
   open: boolean;
   setOpen: (open: boolean) => void;
-  onSubmit: (values: any) => void;
 }
 
-const ModalAddNewUser: React.FC<ModalAddNewUserProps> = ({
-  open,
-  setOpen,
-  onSubmit,
-}) => {
+const ModalAddNewUser: React.FC<ModalAddNewUserProps> = ({ open, setOpen }) => {
   const [form] = Form.useForm();
 
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      onSubmit(values); // Gửi dữ liệu ra ngoài component cha
+
       message.success("Thêm người dùng mới thành công!");
       form.resetFields();
       setOpen(false);

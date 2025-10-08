@@ -61,6 +61,11 @@ const AdminSidebar = () => {
       key: "/managerSupplier",
       icon: <ShopOutlined />,
     },
+    {
+      label: <Link to="/admin/managerRole">Quản lí quyền</Link>,
+      key: "/managerRole",
+      icon: <ShopOutlined />,
+    },
   ];
 
   const itemsDropdown = [
@@ -88,7 +93,7 @@ const AdminSidebar = () => {
     <Layout style={{ minHeight: "100vh" }}>
       <Sider
         theme="light"
-        width={280} // 👉 tăng chiều rộng menu
+        width={250} // 👉 tăng chiều rộng menu
         collapsible
         collapsed={collapsed}
         onCollapse={(value) => setCollapsed(value)}

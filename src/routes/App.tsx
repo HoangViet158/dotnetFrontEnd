@@ -6,6 +6,11 @@ import ManagerUser from "../components/admin/ManagerUser/ManagerUser";
 import ManagerCustomer from "../components/admin/ManagerCustomer/ManagerCustomer";
 import ManagerProduct from "../components/admin/ManageProduct/ManageProduct";
 import ManagerInventory from "../components/admin/ManagerInventory/ManagerInventory";
+import ManagerPromotion from "../components/admin/ManagerPromotion/ManagerPromotion";
+import ManagerReport from "../components/admin/ManagerReport/ManagerReport";
+import ManagerSupplier from "../components/admin/ManagerSupplier/ManagerSupplier";
+import ManagerRole from "../components/admin/ManagerRole/ManagerRole";
+
 function App() {
   return (
     <BrowserRouter>
@@ -13,6 +18,19 @@ function App() {
         <Route path="/" element={<SaleManager />}></Route>
         <Route path="/admin" element={<Admin />}>
           <Route path="/admin/managerUser" element={<ManagerUser />}></Route>
+          <Route
+            path="/admin/managerPromotion"
+            element={<ManagerPromotion />}
+          ></Route>
+          <Route
+            path="/admin/managerReport"
+            element={<ManagerReport />}
+          ></Route>
+          <Route
+            path="/admin/managerSupplier"
+            element={<ManagerSupplier />}
+          ></Route>
+          <Route path="/admin/managerRole" element={<ManagerRole />}></Route>
           <Route
             path="/admin/managerCustomer"
             element={<ManagerCustomer />}
