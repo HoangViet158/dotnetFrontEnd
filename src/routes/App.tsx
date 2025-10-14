@@ -10,12 +10,15 @@ import ManagerPromotion from "../components/admin/ManagerPromotion/ManagerPromot
 import ManagerReport from "../components/admin/ManagerReport/ManagerReport";
 import ManagerSupplier from "../components/admin/ManagerSupplier/ManagerSupplier";
 import ManagerRole from "../components/admin/ManagerRole/ManagerRole";
+import Login from "../components/Auth/Login";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<SaleManager />}></Route>
+        <Route path="/login" element={<Login />}></Route>
+
         <Route path="/admin" element={<Admin />}>
           <Route path="/admin/managerUser" element={<ManagerUser />}></Route>
           <Route

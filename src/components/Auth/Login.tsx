@@ -1,123 +1,106 @@
 import { useState } from "react";
+import { Form, Input, Button, Typography, message } from "antd";
 import { LoginAPI } from "../../services/Auth";
+import Image from "../../assets/1.jpg";
+
+const { Title, Text, Link } = Typography;
 
 const Login = () => {
-  const [email, setEmail] = useState(String);
-  const [password, setPassword] = useState(String);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    console.log(email);
-    console.log(password);
-    const res = await LoginAPI({
-      username :email,
-      password,
-    });
-    console.log(res);
+  const handleLogin = async (values: { email: string; password: string }) => {
+    try {
+      setLoading(true);
+      const res = await LoginAPI({
+        username: values.email,
+        password: values.password,
+      });
+      console.log(res);
+      message.success("Đăng nhập thành công!");
+    } catch (err) {
+      message.error("Đăng nhập thất bại. Vui lòng thử lại!");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <section className="bg-gray-50 dark:bg-gray-900">
-      <div className="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-        <a
-          href="#"
-          className="flex items-center mb-6 text-2xl font-semibold text-gray-900 dark:text-white"
-        >
-          <img
-            className="w-8 h-8 mr-2"
-            src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/logo.svg"
-            alt="logo"
-          />
-          Flowbite
-        </a>
-        <div className="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
-          <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
-            <h2 className="text-xl text-center font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
-              Sign in to your account
-            </h2>
-            <form className="space-y-4 md:space-y-6" action="#">
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Your email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  id="email"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="name@company.com"
-                  onChange={(event) => setEmail(event?.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  id="password"
-                  placeholder="••••••••"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input
-                      id="remember"
-                      aria-describedby="remember"
-                      type="checkbox"
-                      className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800"
-                      required
-                    />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label
-                      htmlFor="remember"
-                      className="text-gray-500 dark:text-gray-300"
-                    >
-                      Remember me
-                    </label>
-                  </div>
-                </div>
-                <a
-                  href="#"
-                  className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500"
-                >
-                  Forgot password?
-                </a>
-              </div>
-              <button
-                onClick={(event) => handleLogin(event)}
-                type="submit"
-                className="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
-              >
-                Sign in
-              </button>
-              <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                Don’t have an account yet?{" "}
-                <a
-                  href="/register"
-                  className="font-medium text-primary-600 hover:underline dark:text-primary-500"
-                >
-                  Sign up
-                </a>
-              </p>
-            </form>
-          </div>
+    <div className="flex h-screen">
+      {/* Left Section */}
+      <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-blue-50">
+        <img src={Image} alt="illustration" className="w-2/3 mb-6" />
+        <h2 className="text-xl font-semibold text-gray-800 mb-2 text-center">
+          Receive payments from any banking system
+        </h2>
+        <p className="text-gray-500 text-center max-w-xs">
+          Connect your bank card, and create accounts in the selected currency.
+        </p>
+        <div className="flex space-x-1 mt-4">
+          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+          <div className="w-2 h-2 bg-blue-200 rounded-full"></div>
+          <div className="w-2 h-2 bg-blue-200 rounded-full"></div>
         </div>
       </div>
-    </section>
+
+      {/* Right Section */}
+      <div className="flex flex-col justify-center items-center w-full md:w-1/2 bg-white px-8">
+        <div className="w-full max-w-md space-y-6">
+          <div className="space-y-2 text-center">
+            <div className="text-2xl">👋</div>
+            <Title level={2}>Welcome back!</Title>
+            <Text type="secondary">Please login to access your account.</Text>
+          </div>
+
+          <Form
+            layout="vertical"
+            onFinish={handleLogin}
+            autoComplete="off"
+            requiredMark={false}
+          >
+            <Form.Item
+              label="E-mail or phone number"
+              name="email"
+              rules={[{ required: true, message: "Please enter your email" }]}
+            >
+              <Input placeholder="Type your e-mail or phone number" />
+            </Form.Item>
+
+            <Form.Item
+              label="Password"
+              name="password"
+              rules={[
+                { required: true, message: "Please enter your password" },
+              ]}
+            >
+              <Input.Password placeholder="Type your password" />
+            </Form.Item>
+
+            <div className="text-right mb-2">
+              <Link href="#">Forgot Password?</Link>
+            </div>
+
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                block
+                size="large"
+              >
+                Log In
+              </Button>
+            </Form.Item>
+
+            <p className="text-sm text-center text-gray-600">
+              Don’t have an account?{" "}
+              <Link href="/register" className="text-blue-600">
+                Sign Up
+              </Link>
+            </p>
+          </Form>
+        </div>
+      </div>
+    </div>
   );
 };
 
