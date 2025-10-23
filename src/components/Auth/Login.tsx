@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Form, Input, Button, Typography, message } from "antd";
 import { LoginAPI } from "../../services/Auth";
 import Image from "../../assets/1.jpg";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const { Title, Text, Link } = Typography;
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
-
+  let navi = useNavigate();
   const handleLogin = async (values: { email: string; password: string }) => {
     try {
       setLoading(true);
@@ -15,15 +17,23 @@ const Login = () => {
         username: values.email,
         password: values.password,
       });
-      console.log(res);
-      message.success("Đăng nhập thành công!");
+      if (res && res.data && res.success === true) {
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("user", JSON.stringify(res.data?.user));
+        toast.success("Đăng nhập thành công");
+        setTimeout(() => {
+          navi("/");
+        }, 2000);
+      } else {
+        toast.error("Sai tài khoản hoặc mật khẩu!");
+      }
     } catch (err) {
+      console.error(err);
       message.error("Đăng nhập thất bại. Vui lòng thử lại!");
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="flex h-screen">
       {/* Left Section */}

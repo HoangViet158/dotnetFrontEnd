@@ -10,6 +10,7 @@ import { ProTable, type ProColumns } from "@ant-design/pro-components";
 import dayjs from "dayjs";
 import ModalEdit from "./ModalEdit";
 import ModalAddNewUser from "./ModalAddNewUser";
+import { GetUserAll } from "../../../services/User";
 
 interface User {
   user_id: number;
@@ -20,43 +21,47 @@ interface User {
 }
 
 const ManagerUser: React.FC = () => {
-  const tableRef = useRef<any>(null);
-
   const [data, setData] = useState<User[]>([]);
   const [filteredData, setFilteredData] = useState<User[]>([]);
-  const [total, setTotal] = useState<number>(0);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(5);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const [searchName, setSearchName] = useState<string>("");
+  const [searchRole, setSearchRole] = useState<string>("");
 
   const [openModalAdd, setOpenModalAdd] = useState(false);
   const [openModalEdit, setOpenModalEdit] = useState(false);
   const [editData, setEditData] = useState<User | null>(null);
 
-  const [searchName, setSearchName] = useState<string>("");
-  const [searchRole, setSearchRole] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  // ================================
+  // FETCH USERS
+  // ================================
+  const fetchAllUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await GetUserAll();
+      if (res && res.success && res.data) {
+        setData(res.data);
+        setFilteredData(res.data); // ✅ hiển thị ban đầu
+      } else {
+        message.error("Không tải được danh sách người dùng!");
+      }
+    } catch (err) {
+      message.error("Lỗi khi tải danh sách người dùng!");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const mockUsers: User[] = [
-      {
-        user_id: 1,
-        username: "admin01",
-        full_name: "Nguyễn Văn Quản Trị",
-        role: "admin",
-        created_at: "2025-10-01",
-      },
-      {
-        user_id: 2,
-        username: "staff01",
-        full_name: "Trần Thị Nhân Viên",
-        role: "staff",
-        created_at: "2025-10-02",
-      },
-    ];
-    setData(mockUsers);
-    setFilteredData(mockUsers);
-    setTotal(mockUsers.length);
+    fetchAllUsers();
   }, []);
 
+  // ================================
+  // HANDLE SEARCH
+  // ================================
   const handleSearch = () => {
     const filtered = data.filter((u) => {
       const matchName = searchName
@@ -66,36 +71,43 @@ const ManagerUser: React.FC = () => {
       return matchName && matchRole;
     });
     setFilteredData(filtered);
-    setTotal(filtered.length);
   };
+
+  // ================================
+  // HANDLE DELETE
+  // ================================
+  // const handleDelete = async (user: User) => {
+  //   try {
+  //     const res = await DeleteUser(user.user_id);
+  //     if (res && res.success) {
+  //       message.success("Xóa người dùng thành công!");
+  //       fetchAllUsers();
+  //     } else {
+  //       message.error(res.message || "Không thể xóa người dùng!");
+  //     }
+  //   } catch (error) {
+  //     message.error("Lỗi khi xóa người dùng!");
+  //   }
+  // };
 
   // ================================
   // TABLE COLUMNS
   // ================================
-  const columns = [
+  const columns: ProColumns<User>[] = [
     {
       title: "STT",
       key: "index",
       width: 60,
-      align: "center" as const,
-      render: (_: any, __: any, index: number) =>
-        (currentPage - 1) * pageSize + index + 1,
+      align: "center",
+      render: (_, __, index) => (currentPage - 1) * pageSize + index + 1,
     },
-    {
-      title: "Tên đăng nhập",
-      dataIndex: "username",
-      key: "username",
-    },
-    {
-      title: "Họ và tên",
-      dataIndex: "full_name",
-      key: "full_name",
-    },
+    { title: "Tên đăng nhập", dataIndex: "username", key: "username" },
+    { title: "Họ và tên", dataIndex: "fullName", key: "fullName" },
     {
       title: "Vai trò",
       dataIndex: "role",
       key: "role",
-      render: (role: string) =>
+      render: (role) =>
         role === "admin" ? (
           <span style={{ color: "#ff4d4f", fontWeight: 600 }}>Admin</span>
         ) : (
@@ -104,15 +116,15 @@ const ManagerUser: React.FC = () => {
     },
     {
       title: "Ngày tạo",
-      dataIndex: "created_at",
-      key: "created_at",
-      render: (val: string) => dayjs(val).format("DD/MM/YYYY"),
+      dataIndex: "createdAt", // ✅ đúng key như từ API
+      key: "createdAt",
+      render: (val: string) => dayjs(val).format("DD/MM/YYYY HH:mm:ss"),
     },
     {
       title: "Thao tác",
       key: "actions",
       width: 120,
-      render: (_: any, record: User) => (
+      render: (_, record) => (
         <Space>
           <EditOutlined
             style={{ color: "#1890ff", fontSize: 18, cursor: "pointer" }}
@@ -125,7 +137,7 @@ const ManagerUser: React.FC = () => {
             title="Bạn có chắc muốn xóa người dùng này?"
             okText="Xóa"
             cancelText="Hủy"
-            onConfirm={() => {}}
+            // onConfirm={() => handleDelete(record)}
           >
             <DeleteOutlined
               style={{ color: "#ff4d4f", fontSize: 18, cursor: "pointer" }}
@@ -166,7 +178,7 @@ const ManagerUser: React.FC = () => {
           style={{ width: 180 }}
           options={[
             { label: "Admin", value: "admin" },
-            { label: "Staff", value: "staff" },
+            { label: "Nhân viên", value: "staff" },
           ]}
         />
         <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
@@ -176,16 +188,17 @@ const ManagerUser: React.FC = () => {
 
       {/* Table */}
       <ProTable<User>
-        columns={columns as ProColumns<User, "text">[]}
+        columns={columns}
         dataSource={filteredData}
+        loading={loading}
         rowKey="user_id"
         search={false}
         pagination={{
           current: currentPage,
           pageSize,
-          total,
+          total: filteredData.length,
           showSizeChanger: true,
-          onChange: (page: number, size: number) => {
+          onChange: (page, size) => {
             setCurrentPage(page);
             setPageSize(size);
           },

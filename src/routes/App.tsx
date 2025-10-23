@@ -11,6 +11,7 @@ import ManagerReport from "../components/admin/ManagerReport/ManagerReport";
 import ManagerSupplier from "../components/admin/ManagerSupplier/ManagerSupplier";
 import ManagerRole from "../components/admin/ManagerRole/ManagerRole";
 import Login from "../components/Auth/Login";
+import { Bounce, ToastContainer } from "react-toastify";
 
 function App() {
   return (
