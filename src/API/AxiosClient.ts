@@ -1,44 +1,55 @@
 import axios from "axios";
+import { message } from "antd";
 
 const instance = axios.create({
   baseURL: "http://localhost:5082/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Add a request interceptor
 instance.interceptors.request.use(
-  function (config) {
-    // const accestoken = store?.getState()?.login.token;
-    // config.headers["Authorization"] = "Bearer " + accestoken;
-
-    // NProgress.start();
-    // Do something before request is ssent
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
     return config;
   },
-  function (error) {
-    // Do something with request error
+  (error) => Promise.reject(error)
+);
+
+instance.interceptors.response.use(
+  (response) => {
+    return response?.data ?? response;
+  },
+  (error) => {
+    if (error.response) {
+      const status = error.response.status;
+
+      if (status === 401) {
+        message.warning("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
+        // 🧹 Xóa token cũ
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        // ⏳ Chờ một chút để người dùng thấy thông báo
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1500);
+      } else if (status === 403) {
+        message.error("Bạn không có quyền truy cập!");
+      } else if (status === 500) {
+        message.error("Lỗi máy chủ. Vui lòng thử lại sau!");
+      } else {
+        message.error(error.response.data?.message || "Đã xảy ra lỗi!");
+      }
+
+      return Promise.reject(error.response.data);
+    }
+
+    message.error("Không thể kết nối đến máy chủ!");
     return Promise.reject(error);
   }
 );
 
-// Add a response interceptor
-instance.interceptors.response.use(
-  function (response) {
-    // NProgress.done();
-    // Any status code that lie within the range of 2xx cause this function to trigger
-    // Do something with response data
-    return response && response.data ? response.data : response;
-  },
-  function (error) {
-    // NProgress.done();
-
-    if (error.response.data && error.response.data.EC === -999) {
-      //   window.location.href = "/login";
-    }
-    // Any status codes that falls outside the range of 2xx cause this function to trigger
-    // Do something with response error
-    return error && error.response && error.response.data
-      ? error.response.data
-      : Promise.reject(error);
-  }
-);
 export default instance;
