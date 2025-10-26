@@ -10,181 +10,129 @@ import { ProTable, type ProColumns } from "@ant-design/pro-components";
 import dayjs from "dayjs";
 import ModalEdit from "./ModalEditProduct";
 import ModalAddNew from "./ModalAddNewProduct";
-
+import {
+  getAllProducts,
+  createNewProduct,
+  deleteProduct,
+} from "../../../services/Products";
+import { getAllCategories } from "../../../services/Category";
+import { getAllSuppliers } from "../../../services/Suppliers";
+import type { ProductType } from "../../../type/ProductsType";
 interface Product {
-  product_id: number;
-  category_id: number;
-  supplier_id: number;
-  product_name: string;
+  productId: number;
+  category: Category;
+  supplier: Supplier;
+  productName: string;
   barcode: string;
   price: number;
   // category: string;
   unit: string;
-  created_at: string;
+  createdAt: string;
+}
+interface Category {
+  categoryId: number;
+  categoryName: string;
+}
+
+interface Supplier {
+  supplierId: number;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
 }
 
 const ManagerProduct: React.FC = () => {
   const tableRef = useRef<any>(null);
 
-  const [data, setData] = useState<User[]>([]);
-  const [filteredData, setFilteredData] = useState<User[]>([]);
+  const [data, setData] = useState<Product[]>([]);
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+  const [suppliersList, setSuppliersList] = useState<Supplier[]>([]);
+  const [filteredData, setFilteredData] = useState<Product[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(5);
 
   const [openModalAdd, setOpenModalAdd] = useState(false);
   const [openModalEdit, setOpenModalEdit] = useState(false);
-  const [editData, setEditData] = useState<User | null>(null);
+  const [editData, setEditData] = useState<ProductType | null>(null);
 
   const [searchName, setSearchName] = useState<string>("");
-  const [searchCatogory, setsearchCatogory] = useState<string>("");
-  const [searchSupplier, setsearchSupplier] = useState<string>("");
+  const [searchCatogory, setsearchCatogory] = useState<number | "">("");
+  const [searchSupplier, setsearchSupplier] = useState<number | "">("");
 
+  const fetchProducts = async () => {
+    const res = await getAllProducts();
+    const products = res.data;
+    console.log("Fetched products:", products);
+    setData(products);
+    setFilteredData(products);
+    setTotal(products.length);
+  };
+  const fetchCategories = async () => {
+    const res = await getAllCategories();
+    setCategoriesList(res.data);
+    // console.log("Fetched categories:", res.data);
+  };
+
+  const fetchSuppliers = async () => {
+    const res = await getAllSuppliers();
+    setSuppliersList(res.data);
+    console.log("Fetched suppliers:", res.data);
+  };
   useEffect(() => {
-    const mockProducts: Product[] = [
-      {
-        product_id: 1,
-        supplier_id: 1,
-        category_id: 1,
-        product_name: "Coca Cola lon",
-        barcode: "8900000000001",
-        price: 314838,
-        unit: "hộp",
-        created_at: "2025-10-01",
-      },
-      {
-        product_id: 2,
-        supplier_id: 3,
-        category_id: 2,
-        product_name: "Pepsi lon",
-        barcode: "8900000000002",
-        price: 114807,
-        unit: "cái",
-        created_at: "2025-10-01",
-      },
-      {
-        product_id: 3,
-        supplier_id: 3,
-        category_id: 3,
-        product_name: "Trà Xanh 0 độ",
-        barcode: "8900000000003",
-        price: 415725,
-        unit: "tuýp",
-        created_at: "2025-10-01",
-      },
-      {
-        product_id: 4,
-        supplier_id: 1,
-        category_id: 1,
-        product_name: "Sting dâu",
-        barcode: "8900000000004",
-        price: 351670,
-        unit: "cái",
-        created_at: "2025-10-01",
-      },
-      {
-        product_id: 5,
-        supplier_id: 2,
-        category_id: 3,
-        product_name: "Red Bull",
-        barcode: "8900000000005",
-        price: 402179,
-        unit: "lon",
-        created_at: "2025-10-01",
-      },
-      {
-        product_id: 6,
-        supplier_id: 2,
-        category_id: 1,
-        product_name: "Bánh Oreo",
-        barcode: "8900000000006",
-        price: 209283,
-        unit: "chai",
-        created_at: "2025-10-01",
-      },
-      {
-        product_id: 7,
-        supplier_id: 3,
-        category_id: 4,
-        product_name: "Bánh Chocopie",
-        barcode: "8900000000007",
-        price: 212528,
-        unit: "lon",
-        created_at: "2025-10-01",
-      },
-      {
-        product_id: 8,
-        supplier_id: 2,
-        category_id: 2,
-        product_name: "Kẹo Alpenliebe",
-        barcode: "8900000000008",
-        price: 34313,
-        unit: "lon",
-        created_at: "2025-10-01",
-      },
-      {
-        product_id: 9,
-        supplier_id: 1,
-        category_id: 4,
-        product_name: "Kẹo bạc hà",
-        barcode: "8900000000009",
-        price: 316289,
-        unit: "cái",
-        created_at: "2025-10-01",
-      },
-      {
-        product_id: 10,
-        supplier_id: 2,
-        category_id: 2,
-        product_name: "Socola KitKat",
-        barcode: "8900000000010",
-        price: 139959,
-        unit: "chai",
-        created_at: "2025-10-01",
-      },
-    ];
-
-    setData(mockProducts);
-    setFilteredData(mockProducts);
-    setTotal(mockProducts.length);
+    fetchProducts();
+    fetchCategories();
+    fetchSuppliers();
   }, []);
 
-  const handleShowSupplier = (supplier_id: number) => {
-    if (supplier_id === 1) {
-      return "Coca";
-    } else if (supplier_id === 2) {
-      return "Pepsi";
-    } else {
-      return "Lays";
-    }
-  };
-  const handleShowCatogory = (category_id: number) => {
-    if (category_id === 1) {
-      return "Bánh kẹo";
-    } else if (category_id === 2) {
-      return "Đồ uống";
-    } else if (category_id === 3) {
-      return "Gia vị";
-    } else {
-      return "Mỹ phẩm";
-    }
+  const handleRefresh = () => {
+    fetchProducts();
+    setsearchCatogory("");
+    setSearchName("");
+    setsearchSupplier("");
+    setCurrentPage(1);
   };
 
   const handleSearch = () => {
     const filtered = data.filter((u) => {
       const matchName = searchName
-        ? u.product_name.toLowerCase().includes(searchName.toLowerCase())
+        ? u.productName.toLowerCase().includes(searchName.toLowerCase())
         : true;
       const matchCatogory = searchCatogory
-        ? u.category_id === searchCatogory
+        ? u.category.categoryId === searchCatogory
         : true;
       const matchSupplier = searchSupplier
-        ? u.supplier_id === searchSupplier
+        ? u.supplier.supplierId === searchSupplier
         : true;
       return matchName && matchCatogory && matchSupplier;
     });
     setFilteredData(filtered);
     setTotal(filtered.length);
+  };
+  const handleAddProduct = async (data: ProductType) => {
+    console.log("Adding product:", data);
+    try {
+      const res = await createNewProduct(data);
+      console.log("Added product:", res.data);
+      message.success("Thêm sản phẩm mới thành công!");
+      fetchProducts();
+    } catch (error) {
+      message.error("Thêm sản phẩm thất bại!");
+      console.error("Error adding product:", error);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    console.log("Deleting product with id:", id);
+    try {
+      await deleteProduct(id);
+      message.success("Xóa sản phẩm thành công!");
+      fetchProducts();
+    } catch (error) {
+      message.error("Xóa sản phẩm thất bại!");
+      console.error("Error deleting product:", error);
+    }
   };
 
   // ================================
@@ -201,8 +149,8 @@ const ManagerProduct: React.FC = () => {
     },
     {
       title: "Tên sản phẩm",
-      dataIndex: "product_name",
-      key: "product_name",
+      dataIndex: "productName",
+      key: "productName",
     },
     {
       title: "Mã vạch",
@@ -211,15 +159,15 @@ const ManagerProduct: React.FC = () => {
     },
     {
       title: "Danh mục",
-      dataIndex: "category_id",
-      key: "category_id",
-      render: (val: number) => handleShowCatogory(val),
+      dataIndex: "category",
+      key: "category",
+      render: (val: Category) => val.categoryName,
     },
     {
       title: "Nhà cung cấp",
-      dataIndex: "supplier_id",
-      key: "supplier_id",
-      render: (val: number) => handleShowSupplier(val),
+      dataIndex: "supplier",
+      key: "supplier",
+      render: (val: Supplier) => val.name,
     },
     {
       title: "Giá",
@@ -238,15 +186,15 @@ const ManagerProduct: React.FC = () => {
     },
     {
       title: "Ngày tạo",
-      dataIndex: "created_at",
-      key: "created_at",
+      dataIndex: "createdAt",
+      key: "createdAt",
       render: (val: string) => dayjs(val).format("DD/MM/YYYY"),
     },
     {
       title: "Thao tác",
       key: "actions",
       width: 120,
-      render: (_: any, record: User) => (
+      render: (_: any, record: ProductType) => (
         <Space>
           <EditOutlined
             style={{ color: "#1890ff", fontSize: 18, cursor: "pointer" }}
@@ -259,7 +207,8 @@ const ManagerProduct: React.FC = () => {
             title="Bạn có chắc muốn xóa người dùng này?"
             okText="Xóa"
             cancelText="Hủy"
-            onConfirm={() => {}}
+            // onConfirm={() => handleDelete(record.ProductId!)}
+            onConfirm={() => handleDelete(record.productId)}
           >
             <DeleteOutlined
               style={{ color: "#ff4d4f", fontSize: 18, cursor: "pointer" }}
@@ -298,12 +247,10 @@ const ManagerProduct: React.FC = () => {
           onChange={(val) => setsearchCatogory(val)}
           allowClear
           style={{ width: 180 }}
-          options={[
-            { label: "Bánh kẹo", value: 1 },
-            { label: "Đồ uống", value: 2 },
-            { label: "Gia vị", value: 3 },
-            { label: "Mỹ phẩm", value: 4 },
-          ]}
+          options={categoriesList.map((cat) => ({
+            label: cat.categoryName,
+            value: cat.categoryId,
+          }))}
         />
         <Select
           placeholder="Chọn nhà cung cấp"
@@ -311,11 +258,10 @@ const ManagerProduct: React.FC = () => {
           onChange={(val) => setsearchSupplier(val)}
           allowClear
           style={{ width: 180 }}
-          options={[
-            { label: "Coca", value: 1 },
-            { label: "Pepsi", value: 2 },
-            { label: "Lays", value: 3 },
-          ]}
+          options={suppliersList.map((sup) => ({
+            label: sup.name,
+            value: sup.supplierId,
+          }))}
         />
         <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
           Tìm kiếm
@@ -327,6 +273,13 @@ const ManagerProduct: React.FC = () => {
         columns={columns as ProColumns<Product, "text">[]}
         dataSource={filteredData}
         rowKey="product_id"
+        request={async () => {
+          handleRefresh();
+          return {
+            data: filteredData,
+            total: filteredData.length,
+          };
+        }}
         search={false}
         pagination={{
           current: currentPage,
@@ -355,12 +308,17 @@ const ManagerProduct: React.FC = () => {
         open={openModalEdit}
         setOpen={setOpenModalEdit}
         data={editData}
+        listCategories={categoriesList}
+        listSuppliers={suppliersList}
+        fetchProducts={fetchProducts}
       />
 
       <ModalAddNew
         open={openModalAdd}
         setOpen={setOpenModalAdd}
-        onSubmit={() => {}}
+        onSubmit={handleAddProduct}
+        listCategories={categoriesList}
+        listSuppliers={suppliersList}
       />
     </div>
   );

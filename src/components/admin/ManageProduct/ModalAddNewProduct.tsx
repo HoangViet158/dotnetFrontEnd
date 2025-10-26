@@ -1,26 +1,40 @@
 import React from "react";
-import { Modal, Form, Input, Select, message, InputNumber } from "antd";
+import { Modal, Form, Input, Select, InputNumber } from "antd";
+import type { ProductType } from "../../../type/ProductsType";
 
-const { Option } = Select;
+interface Category {
+  categoryId: number;
+  categoryName: string;
+}
 
+interface Supplier {
+  supplierId: number;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+}
 interface ModalAddNewProductProps {
+  listCategories?: Category[];
+  listSuppliers?: Supplier[];
   open: boolean;
   setOpen: (open: boolean) => void;
-  onSubmit: (values: any) => void;
+  onSubmit: (values: ProductType) => void;
 }
 
 const ModalAddNewProduct: React.FC<ModalAddNewProductProps> = ({
   open,
   setOpen,
   onSubmit,
+  listCategories,
+  listSuppliers,
 }) => {
   const [form] = Form.useForm();
 
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      onSubmit(values); // Gửi dữ liệu ra ngoài component cha
-      message.success("Thêm người dùng mới thành công!");
+      await onSubmit(values); // Gửi dữ liệu ra ngoài component cha
       form.resetFields();
       setOpen(false);
     } catch (error) {
@@ -45,7 +59,7 @@ const ModalAddNewProduct: React.FC<ModalAddNewProductProps> = ({
       <Form form={form} layout="vertical">
         <Form.Item
           label="Tên sản phẩm"
-          name="product_name"
+          name="ProductName"
           rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm!" }]}
         >
           <Input placeholder="Nhập tên sản phẩm" />
@@ -53,7 +67,7 @@ const ModalAddNewProduct: React.FC<ModalAddNewProductProps> = ({
 
         <Form.Item
           label="Mã vạch (Barcode)"
-          name="barcode"
+          name="Barcode"
           rules={[{ required: true, message: "Vui lòng nhập mã vạch!" }]}
         >
           <Input placeholder="Nhập mã vạch" />
@@ -61,7 +75,7 @@ const ModalAddNewProduct: React.FC<ModalAddNewProductProps> = ({
 
         <Form.Item
           label="Giá sản phẩm"
-          name="price"
+          name="Price"
           rules={[{ required: true, message: "Vui lòng nhập giá sản phẩm!" }]}
         >
           <InputNumber
@@ -73,32 +87,35 @@ const ModalAddNewProduct: React.FC<ModalAddNewProductProps> = ({
 
         <Form.Item
           label="Danh mục"
-          name="category_id"
+          name="CategoryId"
           rules={[{ required: true, message: "Vui lòng chọn danh mục!" }]}
         >
-          <Select placeholder="Chọn danh mục">
-            <Option value={1}>Bánh kẹo</Option>
-            <Option value={2}>Đồ uống</Option>
-            <Option value={3}>Gia vị</Option>
-            <Option value={4}>Mỹ phẩm</Option>
-          </Select>
+          <Select
+            placeholder="Chọn danh mục"
+            options={listCategories?.map((category) => ({
+              label: category.categoryName,
+              value: category.categoryId,
+            }))}
+          ></Select>
         </Form.Item>
 
         <Form.Item
           label="Nhà cung cấp"
-          name="supplier_id"
+          name="SupplierId"
           rules={[{ required: true, message: "Vui lòng chọn nhà cung cấp!" }]}
         >
-          <Select placeholder="Chọn nhà cung cấp">
-            <Option value={1}>Coca</Option>
-            <Option value={2}>Pepsi</Option>
-            <Option value={3}>Lays</Option>
-          </Select>
+          <Select
+            placeholder="Chọn nhà cung cấp"
+            options={listSuppliers?.map((supplier) => ({
+              label: supplier.name,
+              value: supplier.supplierId,
+            }))}
+          ></Select>
         </Form.Item>
 
         <Form.Item
           label="Đơn vị tính"
-          name="unit"
+          name="Unit"
           rules={[{ required: true, message: "Vui lòng nhập đơn vị tính!" }]}
         >
           <Input placeholder="Nhập đơn vị (ví dụ: chai, lon, hộp...)" />

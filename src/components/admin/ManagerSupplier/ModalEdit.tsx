@@ -1,40 +1,57 @@
 import React, { useEffect } from "react";
 import { Modal, Form, Input, message, Select } from "antd";
-
-interface Supplier {
-  supplier_id: number;
-  name: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  status: "active" | "inactive";
-}
+import { updateSupplier } from "../../../services/Suppliers";
+import type { Supplier } from "../../../type/SuppliersType";
 
 interface Props {
   open: boolean;
   setOpen: (v: boolean) => void;
   data: Supplier | null;
+  onSuccess?: () => void; // callback sau khi update thành công
 }
 
-const ModalEditSupplier: React.FC<Props> = ({ open, setOpen, data }) => {
+const ModalEditSupplier: React.FC<Props> = ({
+  open,
+  setOpen,
+  data,
+  onSuccess,
+}) => {
   const [form] = Form.useForm();
 
   useEffect(() => {
-    if (data) form.setFieldsValue(data);
+    if (data) {
+      form.setFieldsValue(data);
+    } else {
+      form.resetFields();
+    }
   }, [data, form]);
+  console.log(data);
 
-  const handleOk = () => {
-    form.validateFields().then(() => {
-      message.success("Cập nhật nhà cung cấp thành công (demo)");
+  const handleOk = async () => {
+    try {
+      const values: Supplier = await form.validateFields();
+      if (!data) return;
+
+      await updateSupplier(data.supplierId, values); // gọi API update
+      message.success("Cập nhật nhà cung cấp thành công");
       setOpen(false);
-    });
+      if (onSuccess) onSuccess(); // reload danh sách
+    } catch (error) {
+      console.error(error);
+      message.error("Cập nhật thất bại");
+    }
+  };
+
+  const handleCancel = () => {
+    setOpen(false);
+    form.resetFields();
   };
 
   return (
     <Modal
       title="Chỉnh sửa nhà cung cấp"
       open={open}
-      onCancel={() => setOpen(false)}
+      onCancel={handleCancel}
       onOk={handleOk}
       okText="Lưu"
       cancelText="Hủy"
@@ -47,22 +64,34 @@ const ModalEditSupplier: React.FC<Props> = ({ open, setOpen, data }) => {
         >
           <Input />
         </Form.Item>
-        <Form.Item label="Số điện thoại" name="phone">
+
+        <Form.Item
+          label="Số điện thoại"
+          name="phone"
+          rules={[
+            { required: true, message: "Vui lòng nhập số điện thoại!" },
+            {
+              pattern: /^(0|\+84)[0-9]{9}$/,
+              message: "Số điện thoại không hợp lệ!",
+            },
+          ]}
+        >
           <Input />
         </Form.Item>
-        <Form.Item label="Email" name="email">
+
+        <Form.Item
+          label="Email"
+          name="email"
+          rules={[
+            { required: true, message: "Vui lòng nhập email!" },
+            { type: "email", message: "Email không hợp lệ!" },
+          ]}
+        >
           <Input />
         </Form.Item>
+
         <Form.Item label="Địa chỉ" name="address">
           <Input.TextArea />
-        </Form.Item>
-        <Form.Item label="Trạng thái" name="status">
-          <Select
-            options={[
-              { label: "Hoạt động", value: "active" },
-              { label: "Ngừng", value: "inactive" },
-            ]}
-          />
         </Form.Item>
       </Form>
     </Modal>

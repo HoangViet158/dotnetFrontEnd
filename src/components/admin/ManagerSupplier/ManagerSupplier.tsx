@@ -10,15 +10,8 @@ import {
 import { ProTable, type ProColumns } from "@ant-design/pro-components";
 import ModalAddSupplier from "./ModalAddNew";
 import ModalEditSupplier from "./ModalEdit";
-
-interface Supplier {
-  supplier_id: number;
-  name: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  status: "active" | "inactive";
-}
+import { getAllSuppliers, deleteSupplier } from "../../../services/Suppliers";
+import type { Supplier } from "../../../type/SuppliersType";
 
 const ManagerSupplier: React.FC = () => {
   const tableRef = useRef<any>(null);
@@ -34,33 +27,25 @@ const ManagerSupplier: React.FC = () => {
   const [editData, setEditData] = useState<Supplier | null>(null);
 
   const [searchName, setSearchName] = useState<string>("");
-  const [searchStatus, setSearchStatus] = useState<string>("");
 
   // ==============================
-  // MOCK DATA
+  // GET DATA FROM API
   // ==============================
+  const fetchSuppliers = async () => {
+    try {
+      const res = await getAllSuppliers();
+      const suppliers: Supplier[] = res.data; // giả sử API trả về data ở res.data
+      setData(suppliers);
+      setFilteredData(suppliers);
+      setTotal(suppliers.length);
+    } catch (error) {
+      console.error("Error fetching suppliers:", error);
+      message.error("Không thể lấy danh sách nhà cung cấp");
+    }
+  };
+
   useEffect(() => {
-    const mockSuppliers: Supplier[] = [
-      {
-        supplier_id: 1,
-        name: "Công ty TNHH Điện Lạnh Xanh",
-        phone: "0901234567",
-        email: "contact@dienlanhxanh.vn",
-        address: "123 Nguyễn Văn Linh, Q7, TP.HCM",
-        status: "active",
-      },
-      {
-        supplier_id: 2,
-        name: "Công ty Cổ phần Thiết Bị Công Nghiệp Việt",
-        phone: "0909999999",
-        email: "info@thietbicongnghiep.vn",
-        address: "45 Lê Văn Lương, Hà Nội",
-        status: "inactive",
-      },
-    ];
-    setData(mockSuppliers);
-    setFilteredData(mockSuppliers);
-    setTotal(mockSuppliers.length);
+    fetchSuppliers();
   }, []);
 
   // ==============================
@@ -71,20 +56,33 @@ const ManagerSupplier: React.FC = () => {
       const matchName = searchName
         ? s.name.toLowerCase().includes(searchName.toLowerCase())
         : true;
-      const matchStatus = searchStatus ? s.status === searchStatus : true;
-      return matchName && matchStatus;
+      const matchPhone = searchName
+        ? s.phone?.toLowerCase().includes(searchName.toLowerCase())
+        : true;
+      return matchName || matchPhone; // nếu tên hoặc số điện thoại khớp
     });
     setFilteredData(filtered);
     setTotal(filtered.length);
   };
 
+  const handleRefresh = () => {
+    fetchSuppliers();
+    setSearchName("");
+    setCurrentPage(1);
+  };
   // ==============================
   // HANDLE DELETE
   // ==============================
-  const handleDelete = (id: number) => {
-    setData((prev) => prev.filter((item) => item.supplier_id !== id));
-    setFilteredData((prev) => prev.filter((item) => item.supplier_id !== id));
-    message.success("Đã xóa nhà cung cấp");
+  const handleDelete = async (id: number) => {
+    console.log(id);
+    try {
+      await deleteSupplier(id);
+      message.success("Đã xóa nhà cung cấp");
+      fetchSuppliers(); // reload data sau khi xóa
+    } catch (error) {
+      console.error(error);
+      message.error("Xóa nhà cung cấp thất bại");
+    }
   };
 
   // ==============================
@@ -123,18 +121,6 @@ const ManagerSupplier: React.FC = () => {
       ellipsis: true,
     },
     {
-      title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      width: 120,
-      render: (val: any) =>
-        val === "active" ? (
-          <span style={{ color: "green", fontWeight: 500 }}>Hoạt động</span>
-        ) : (
-          <span style={{ color: "red" }}>Ngừng</span>
-        ),
-    },
-    {
       title: "Thao tác",
       key: "actions",
       width: 120,
@@ -151,7 +137,7 @@ const ManagerSupplier: React.FC = () => {
             title="Bạn có chắc muốn xóa nhà cung cấp này?"
             okText="Xóa"
             cancelText="Hủy"
-            onConfirm={() => handleDelete(record.supplier_id)}
+            onConfirm={() => handleDelete(record.supplierId)}
           >
             <DeleteOutlined
               style={{ color: "#ff4d4f", fontSize: 18, cursor: "pointer" }}
@@ -184,17 +170,7 @@ const ManagerSupplier: React.FC = () => {
           style={{ width: 240 }}
           allowClear
         />
-        <Select
-          placeholder="Chọn trạng thái"
-          value={searchStatus}
-          onChange={(val) => setSearchStatus(val)}
-          allowClear
-          style={{ width: 180 }}
-          options={[
-            { label: "Hoạt động", value: "active" },
-            { label: "Ngừng", value: "inactive" },
-          ]}
-        />
+
         <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
           Tìm kiếm
         </Button>
@@ -206,6 +182,13 @@ const ManagerSupplier: React.FC = () => {
         dataSource={filteredData}
         rowKey="supplier_id"
         search={false}
+        request={async () => {
+          handleRefresh();
+          return {
+            data: filteredData,
+            total: filteredData.length,
+          };
+        }}
         pagination={{
           current: currentPage,
           pageSize,
@@ -228,11 +211,17 @@ const ManagerSupplier: React.FC = () => {
           </Button>,
         ]}
       />
-      <ModalAddSupplier open={openModalAdd} setOpen={setOpenModalAdd} />
+
+      <ModalAddSupplier
+        open={openModalAdd}
+        setOpen={setOpenModalAdd}
+        onSuccess={fetchSuppliers} // reload sau khi thêm
+      />
       <ModalEditSupplier
         open={openModalEdit}
         setOpen={setOpenModalEdit}
         data={editData}
+        onSuccess={fetchSuppliers} // reload sau khi sửa
       />
     </div>
   );

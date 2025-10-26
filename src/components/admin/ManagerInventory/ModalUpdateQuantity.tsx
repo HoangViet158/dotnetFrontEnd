@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, InputNumber, Radio, message } from "antd";
+import { Modal, InputNumber, message } from "antd";
 
 interface Props {
   open: boolean;
@@ -8,7 +8,6 @@ interface Props {
 }
 
 const ModalUpdateQuantity: React.FC<Props> = ({ open, setOpen, product }) => {
-  const [type, setType] = useState<"IMPORT" | "SALE">("IMPORT");
   const [quantity, setQuantity] = useState<number>(0);
 
   const handleOk = () => {

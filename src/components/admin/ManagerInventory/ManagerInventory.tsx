@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Button, Input, Space, Tag, message, Select } from "antd";
+import { Button, Input, Space, Tag } from "antd";
 import { ProTable, type ProColumns } from "@ant-design/pro-components";
 import {
   EditOutlined,
   HistoryOutlined,
-  PlusOutlined,
   WarningOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
@@ -128,7 +127,7 @@ const ManagerInventory: React.FC = () => {
       title: "Ngày cập nhật",
       dataIndex: "updated_at",
       key: "updated_at",
-      render: (val) => dayjs(val).format("DD/MM/YYYY"),
+      render: (val: string) => dayjs(val).format("DD/MM/YYYY"),
     },
     {
       title: "Thao tác",

@@ -1,31 +1,73 @@
 import React, { useEffect } from "react";
-import { Modal, Form, Input, Select, message, InputNumber } from "antd";
+import { Modal, Form, Input, Select, InputNumber } from "antd";
+import { Value } from "sass";
+import { updateProduct } from "../../../services/Products";
 
 const { Option } = Select;
+interface Category {
+  categoryId: number;
+  categoryName: string;
+}
+
+interface Supplier {
+  supplierId: number;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+}
 
 interface ModalEditProductProps {
   open: boolean;
   setOpen: (open: boolean) => void;
   data?: any;
+  listCategories?: Category[];
+  listSuppliers?: Supplier[];
+  fetchProducts: () => void;
 }
 
 const ModalEditProduct: React.FC<ModalEditProductProps> = ({
   open,
   setOpen,
   data,
+  listCategories,
+  listSuppliers,
+  fetchProducts,
 }) => {
   const [form] = Form.useForm();
 
   // Khi mở modal thì tự set dữ liệu người dùng cần sửa vào form
   useEffect(() => {
+    console.log(data);
     if (data) {
-      form.setFieldsValue(data);
+      form.setFieldsValue({
+        ...data,
+        categoryId: data.category?.categoryId,
+        supplierId: data.supplier?.supplierId,
+      });
     } else {
       form.resetFields();
     }
   }, [data, form, open]);
 
-  const handleOk = async () => {};
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
+      console.log({
+        ...values,
+        product_id: data.productId,
+      });
+      const res = await updateProduct({
+        ...values,
+        productId: data.productId,
+      });
+      console.log(res);
+      setOpen(false);
+      fetchProducts();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const handleCancel = () => {
     setOpen(false);
@@ -44,7 +86,7 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
       <Form form={form} layout="vertical">
         <Form.Item
           label="Tên sản phẩm"
-          name="product_name"
+          name="productName"
           rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm!" }]}
         >
           <Input placeholder="Nhập tên sản phẩm" />
@@ -78,27 +120,30 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
 
         <Form.Item
           label="Danh mục"
-          name="category_id"
+          name="categoryId"
           rules={[{ required: true, message: "Vui lòng chọn danh mục!" }]}
         >
-          <Select placeholder="Chọn danh mục">
-            <Option value={1}>Bánh kẹo</Option>
-            <Option value={2}>Đồ uống</Option>
-            <Option value={3}>Gia vị</Option>
-            <Option value={4}>Mỹ phẩm</Option>
-          </Select>
+          <Select
+            placeholder="Chọn danh mục"
+            options={listCategories?.map((item) => ({
+              value: item.categoryId,
+              label: item.categoryName,
+            }))}
+          ></Select>
         </Form.Item>
 
         <Form.Item
           label="Nhà cung cấp"
-          name="supplier_id"
+          name="supplierId"
           rules={[{ required: true, message: "Vui lòng chọn nhà cung cấp!" }]}
         >
-          <Select placeholder="Chọn nhà cung cấp">
-            <Option value={1}>Coca</Option>
-            <Option value={2}>Pepsi</Option>
-            <Option value={3}>Lays</Option>
-          </Select>
+          <Select
+            placeholder="Chọn nhà cung cấp"
+            options={listSuppliers?.map((item) => ({
+              value: item.supplierId,
+              label: item.name,
+            }))}
+          ></Select>
         </Form.Item>
 
         <Form.Item

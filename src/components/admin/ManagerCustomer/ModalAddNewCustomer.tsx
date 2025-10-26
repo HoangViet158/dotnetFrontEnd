@@ -1,7 +1,6 @@
 import React from "react";
 import { Modal, Form, Input, Select, message } from "antd";
 
-const { Option } = Select;
 
 interface ModalAddNewCustomerProps {
   open: boolean;
