@@ -4,18 +4,20 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
+  ReloadOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
 import { ProTable, type ProColumns } from "@ant-design/pro-components";
 import dayjs from "dayjs";
 import ModalEdit from "./ModalEdit";
 import ModalAddNewUser from "./ModalAddNewUser";
-import { GetUserAll } from "../../../services/User";
+import { DeleteUser, GetUserAll } from "../../../services/User";
+import { toast } from "react-toastify";
 
 interface User {
-  user_id: number;
+  id: number;
   username: string;
-  full_name: string;
+  fullName: string;
   role: "admin" | "staff";
   created_at: string;
 }
@@ -65,7 +67,7 @@ const ManagerUser: React.FC = () => {
   const handleSearch = () => {
     const filtered = data.filter((u) => {
       const matchName = searchName
-        ? u.full_name.toLowerCase().includes(searchName.toLowerCase())
+        ? u.fullName.toLowerCase().includes(searchName.toLowerCase())
         : true;
       const matchRole = searchRole ? u.role === searchRole : true;
       return matchName && matchRole;
@@ -76,19 +78,19 @@ const ManagerUser: React.FC = () => {
   // ================================
   // HANDLE DELETE
   // ================================
-  // const handleDelete = async (user: User) => {
-  //   try {
-  //     const res = await DeleteUser(user.user_id);
-  //     if (res && res.success) {
-  //       message.success("Xóa người dùng thành công!");
-  //       fetchAllUsers();
-  //     } else {
-  //       message.error(res.message || "Không thể xóa người dùng!");
-  //     }
-  //   } catch (error) {
-  //     message.error("Lỗi khi xóa người dùng!");
-  //   }
-  // };
+  const handleDelete = async (user: User) => {
+    try {
+      const res = await DeleteUser(user.id);
+      if (res && res.success) {
+        toast.success("Xóa người dùng thành công!");
+        fetchAllUsers();
+      } else {
+        toast.error(res.message || "Không thể xóa người dùng!");
+      }
+    } catch (error) {
+      toast.error("Lỗi khi xóa người dùng!");
+    }
+  };
 
   // ================================
   // TABLE COLUMNS
@@ -107,8 +109,8 @@ const ManagerUser: React.FC = () => {
       title: "Vai trò",
       dataIndex: "role",
       key: "role",
-      render: (role) =>
-        role === "admin" ? (
+      render: (_: any, record: User) =>
+        record.role === "admin" ? (
           <span style={{ color: "#ff4d4f", fontWeight: 600 }}>Admin</span>
         ) : (
           <span style={{ color: "#1890ff" }}>Nhân viên</span>
@@ -116,15 +118,16 @@ const ManagerUser: React.FC = () => {
     },
     {
       title: "Ngày tạo",
-      dataIndex: "createdAt", // ✅ đúng key như từ API
-      key: "createdAt",
-      render: (val: string) => dayjs(val).format("DD/MM/YYYY HH:mm:ss"),
+      dataIndex: "created_at",
+      key: "created_at",
+      render: (_: any, record: User) =>
+        dayjs(record.created_at).format("DD/MM/YYYY "),
     },
     {
       title: "Thao tác",
       key: "actions",
       width: 120,
-      render: (_, record) => (
+      render: (_: any, record: User) => (
         <Space>
           <EditOutlined
             style={{ color: "#1890ff", fontSize: 18, cursor: "pointer" }}
@@ -137,7 +140,7 @@ const ManagerUser: React.FC = () => {
             title="Bạn có chắc muốn xóa người dùng này?"
             okText="Xóa"
             cancelText="Hủy"
-            // onConfirm={() => handleDelete(record)}
+            onConfirm={() => handleDelete(record)}
           >
             <DeleteOutlined
               style={{ color: "#ff4d4f", fontSize: 18, cursor: "pointer" }}
@@ -213,6 +216,13 @@ const ManagerUser: React.FC = () => {
           >
             Thêm người dùng
           </Button>,
+          <Button
+            key="refresh"
+            icon={<ReloadOutlined />}
+            onClick={fetchAllUsers} // gọi lại API để refresh
+          >
+            Làm mới
+          </Button>,
         ]}
       />
 
@@ -220,8 +230,13 @@ const ManagerUser: React.FC = () => {
         open={openModalEdit}
         setOpen={setOpenModalEdit}
         data={editData}
+        fetchAllUsers={fetchAllUsers}
       />
-      <ModalAddNewUser open={openModalAdd} setOpen={setOpenModalAdd} />
+      <ModalAddNewUser
+        open={openModalAdd}
+        setOpen={setOpenModalAdd}
+        fetchAllUsers={fetchAllUsers}
+      />
     </div>
   );
 };

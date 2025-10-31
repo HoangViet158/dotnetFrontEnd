@@ -12,6 +12,7 @@ import ManagerSupplier from "../components/admin/ManagerSupplier/ManagerSupplier
 import ManagerRole from "../components/admin/ManagerRole/ManagerRole";
 import Login from "../components/Auth/Login";
 import { Bounce, ToastContainer } from "react-toastify";
+import ProtectedRoute from "./ProtectedRoute/ProtectedRoute";
 
 function App() {
   return (
@@ -19,34 +20,35 @@ function App() {
       <Routes>
         <Route path="/" element={<SaleManager />}></Route>
         <Route path="/login" element={<Login />}></Route>
-
-        <Route path="/admin" element={<Admin />}>
-          <Route path="/admin/managerUser" element={<ManagerUser />}></Route>
-          <Route
-            path="/admin/managerPromotion"
-            element={<ManagerPromotion />}
-          ></Route>
-          <Route
-            path="/admin/managerReport"
-            element={<ManagerReport />}
-          ></Route>
-          <Route
-            path="/admin/managerSupplier"
-            element={<ManagerSupplier />}
-          ></Route>
-          <Route path="/admin/managerRole" element={<ManagerRole />}></Route>
-          <Route
-            path="/admin/managerCustomer"
-            element={<ManagerCustomer />}
-          ></Route>
-          <Route
-            path="/admin/managerProduct"
-            element={<ManagerProduct />}
-          ></Route>
-          <Route
-            path="/admin/managerInventory"
-            element={<ManagerInventory />}
-          ></Route>
+        <Route element={<ProtectedRoute requiredRole="admin" />}>
+          <Route path="/admin" element={<Admin />}>
+            <Route path="/admin/managerUser" element={<ManagerUser />}></Route>
+            <Route
+              path="/admin/managerPromotion"
+              element={<ManagerPromotion />}
+            ></Route>
+            <Route
+              path="/admin/managerReport"
+              element={<ManagerReport />}
+            ></Route>
+            <Route
+              path="/admin/managerSupplier"
+              element={<ManagerSupplier />}
+            ></Route>
+            <Route path="/admin/managerRole" element={<ManagerRole />}></Route>
+            <Route
+              path="/admin/managerCustomer"
+              element={<ManagerCustomer />}
+            ></Route>
+            <Route
+              path="/admin/managerProduct"
+              element={<ManagerProduct />}
+            ></Route>
+            <Route
+              path="/admin/managerInventory"
+              element={<ManagerInventory />}
+            ></Route>
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
