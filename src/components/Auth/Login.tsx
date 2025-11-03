@@ -19,10 +19,15 @@ const Login = () => {
       });
       if (res && res.data && res.success === true) {
         localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data?.user));
+        localStorage.setItem("user", JSON.stringify(res.data));
+        console.log(res);
         toast.success("Đăng nhập thành công");
         setTimeout(() => {
-          navi("/");
+          if (res.data?.role === "admin") {
+            navi("/admin/managerCustomer");
+          } else {
+            navi("/");
+          }
         }, 2000);
       } else {
         toast.error("Sai tài khoản hoặc mật khẩu!");
