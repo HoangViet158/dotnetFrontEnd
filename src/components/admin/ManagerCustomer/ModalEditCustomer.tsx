@@ -1,5 +1,7 @@
 import React, { useEffect } from "react";
 import { Modal, Form, Input, Select, message } from "antd";
+import { updateCustomer } from "../../../services/Customer";
+import { toast } from "react-toastify";
 
 const { Option } = Select;
 
@@ -7,12 +9,14 @@ interface ModalEditCustomerProps {
   open: boolean;
   setOpen: (open: boolean) => void;
   data?: any;
+  fetchCustomer: () => void;
 }
 
 const ModalEditCustomer: React.FC<ModalEditCustomerProps> = ({
   open,
   setOpen,
   data,
+  fetchCustomer,
 }) => {
   const [form] = Form.useForm();
 
@@ -25,7 +29,26 @@ const ModalEditCustomer: React.FC<ModalEditCustomerProps> = ({
     }
   }, [data, form, open]);
 
-  const handleOk = async () => {};
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
+      console.log({
+        ...values,
+        cusomterId: data.cusomterId,
+      });
+      const res = await updateCustomer({
+        ...values,
+        cusomterId: data.cusomterId,
+      });
+      console.log(res);
+      toast.success("Cập nhật khách hàng thành công");
+      setOpen(false);
+      fetchCustomer();
+    } catch (error) {
+      toast.error("Cập nhật khách hàng thất bại");
+      console.error(error);
+    }
+  };
 
   const handleCancel = () => {
     setOpen(false);
@@ -53,7 +76,13 @@ const ModalEditCustomer: React.FC<ModalEditCustomerProps> = ({
         <Form.Item
           label="Số điện thoại"
           name="phone"
-          rules={[{ required: true, message: "Vui lòng nhập số điện thoại!" }]}
+          rules={[
+            { required: true, message: "Vui lòng nhập số điện thoại!" },
+            {
+              pattern: /^(0|\+84)[0-9]{9,10}$/,
+              message: "Số điện thoại không hợp lệ!",
+            },
+          ]}
         >
           <Input placeholder="Nhập số điện thoại" />
         </Form.Item>
@@ -61,7 +90,10 @@ const ModalEditCustomer: React.FC<ModalEditCustomerProps> = ({
         <Form.Item
           label="Email"
           name="email"
-          rules={[{ required: true, message: "Vui lòng nhập Email!" }]}
+          rules={[
+            { required: true, message: "Vui lòng nhập Email!" },
+            { type: "email", message: "Email không hợp lệ!" }, // kiểm tra định dạng
+          ]}
         >
           <Input placeholder="Nhập Email" />
         </Form.Item>

@@ -1,7 +1,6 @@
 import React from "react";
 import { Modal, Form, Input, Select, message } from "antd";
 
-
 interface ModalAddNewCustomerProps {
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -53,7 +52,13 @@ const ModalAddNewCustomer: React.FC<ModalAddNewCustomerProps> = ({
         <Form.Item
           label="Số điện thoại"
           name="phone"
-          rules={[{ required: true, message: "Vui lòng nhập số điện thoại!" }]}
+          rules={[
+            { required: true, message: "Vui lòng nhập số điện thoại!" },
+            {
+              pattern: /^(0|\+84)[0-9]{9,10}$/,
+              message: "Số điện thoại không hợp lệ!",
+            },
+          ]}
         >
           <Input placeholder="Nhập số điện thoại" />
         </Form.Item>
@@ -61,7 +66,10 @@ const ModalAddNewCustomer: React.FC<ModalAddNewCustomerProps> = ({
         <Form.Item
           label="Email"
           name="email"
-          rules={[{ required: true, message: "Vui lòng nhập Email!" }]}
+          rules={[
+            { required: true, message: "Vui lòng nhập Email!" },
+            { type: "email", message: "Email không hợp lệ!" }, // kiểm tra định dạng
+          ]}
         >
           <Input placeholder="Nhập Email" />
         </Form.Item>

@@ -137,19 +137,19 @@ const Payment: React.FC<PaymentProps> = ({
         <Text strong>👤 Thông tin khách hàng</Text>
         <Divider style={{ margin: "8px 0" }} />
         <p>
-          <Text strong>Họ tên:</Text> {customer.name}
+          <Text strong>Họ tên:</Text> {customer?.name}
         </p>
         <p>
-          <Text strong>Điện thoại:</Text> {customer.phone}
+          <Text strong>Điện thoại:</Text> {customer?.phone}
         </p>
-        {customer.email && (
+        {customer?.email && (
           <p>
-            <Text strong>Email:</Text> {customer.email}
+            <Text strong>Email:</Text> {customer?.email}
           </p>
         )}
-        {customer.address && (
+        {customer?.address && (
           <p>
-            <Text strong>Địa chỉ:</Text> {customer.address}
+            <Text strong>Địa chỉ:</Text> {customer?.address}
           </p>
         )}
       </div>

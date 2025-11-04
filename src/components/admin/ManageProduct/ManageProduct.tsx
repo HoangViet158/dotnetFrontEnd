@@ -63,7 +63,7 @@ const ManagerProduct: React.FC = () => {
 
   const fetchProducts = async () => {
     const res = await getAllProducts();
-    const products = res.data;
+    const products = res;
     console.log("Fetched products:", products);
     setData(products);
     setFilteredData(products);
@@ -71,14 +71,14 @@ const ManagerProduct: React.FC = () => {
   };
   const fetchCategories = async () => {
     const res = await getAllCategories();
-    setCategoriesList(res.data);
+    console.log(res);
+    setCategoriesList(res);
     // console.log("Fetched categories:", res.data);
   };
 
   const fetchSuppliers = async () => {
     const res = await getAllSuppliers();
-    setSuppliersList(res.data);
-    console.log("Fetched suppliers:", res.data);
+    setSuppliersList(res);
   };
   useEffect(() => {
     fetchProducts();
@@ -111,7 +111,6 @@ const ManagerProduct: React.FC = () => {
     setTotal(filtered.length);
   };
   const handleAddProduct = async (data: ProductType) => {
-    console.log("Adding product:", data);
     try {
       const res = await createNewProduct(data);
       console.log("Added product:", res.data);

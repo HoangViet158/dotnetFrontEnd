@@ -10,18 +10,25 @@ import { ProTable, type ProColumns } from "@ant-design/pro-components";
 import dayjs from "dayjs";
 import ModalEdit from "./ModalEditCustomer";
 import ModalAddNew from "./ModalAddNewCustomer";
+import {
+  createNewCustomer,
+  deleteCustomer,
+  getAllCustomers,
+} from "../../../services/Customer";
+import { toast } from "react-toastify";
+import { Customer } from "../../../type/Customer";
 
 interface User {
-  customer_id: number;
+  customerId: number;
   name: string;
   phone: string;
   email: string;
   address: string;
-  created_at: string;
+  createdAt: string;
 }
 
 const ManagerCustomer: React.FC = () => {
-  const tableRef = useRef<any>(null);
+  // const tableRef = useRef<User>(null);
 
   const [data, setData] = useState<User[]>([]);
   const [filteredData, setFilteredData] = useState<User[]>([]);
@@ -34,38 +41,28 @@ const ManagerCustomer: React.FC = () => {
   const [editData, setEditData] = useState<User | null>(null);
 
   const [searchName, setSearchName] = useState<string>("");
-  const [searchRole, setSearchRole] = useState<string>("");
+  const handleRefresh = async () => {
+    await fetchCustomer();
+    setSearchName("");
+    setCurrentPage(1);
+  };
 
+  const handleAddCustomer = async (customer: Customer) => {
+    const res = await createNewCustomer(customer);
+    console.log(res);
+    toast.success("Thêm người dùng thành công");
+    fetchCustomer();
+  };
+
+  const fetchCustomer = async () => {
+    const res = await getAllCustomers();
+    console.log(res);
+    setData(res);
+    setFilteredData(res);
+    setTotal(res.length);
+  };
   useEffect(() => {
-    const mockUsers: User[] = [
-      {
-        customer_id: 1,
-        name: "Admin Quản Trị",
-        phone: "0909000001",
-        email: "admin@mail.com",
-        address: "Lê Đức Thọ, Hà Nội",
-        created_at: "2025-10-01",
-      },
-      {
-        customer_id: 2,
-        name: "Nhân Viên 01",
-        phone: "0909000002",
-        email: "staff@mail.com",
-        address: "Lê Đức Thọ, Hà Nội",
-        created_at: "2025-10-02",
-      },
-      {
-        customer_id: 3,
-        name: "Nguyễn Văn A",
-        phone: "0909000003",
-        email: "user1@mail.com",
-        address: "Địa chỉ 3",
-        created_at: "2025-10-03",
-      },
-    ];
-    setData(mockUsers);
-    setFilteredData(mockUsers);
-    setTotal(mockUsers.length);
+    fetchCustomer();
   }, []);
 
   const handleSearch = () => {
@@ -90,7 +87,7 @@ const ManagerCustomer: React.FC = () => {
       key: "index",
       width: 60,
       align: "center" as const,
-      render: (_: any, __: any, index: number) =>
+      render: (_: number, __: number, index: number) =>
         (currentPage - 1) * pageSize + index + 1,
     },
     {
@@ -107,15 +104,15 @@ const ManagerCustomer: React.FC = () => {
     { title: "Địa chỉ", dataIndex: "address", key: "address" },
     {
       title: "Ngày tạo",
-      dataIndex: "created_at",
-      key: "created_at",
+      dataIndex: "createdAt",
+      key: "createdAt",
       render: (val: string) => dayjs(val).format("DD/MM/YYYY"),
     },
     {
       title: "Thao tác",
       key: "actions",
       width: 120,
-      render: (_: any, record: User) => (
+      render: (_: User, record: User) => (
         <Space>
           <EditOutlined
             style={{ color: "#1890ff", fontSize: 18, cursor: "pointer" }}
@@ -124,7 +121,7 @@ const ManagerCustomer: React.FC = () => {
               setOpenModalEdit(true);
             }}
           />
-          <Popconfirm
+          {/* <Popconfirm
             title="Bạn có chắc muốn xóa người dùng này?"
             okText="Xóa"
             cancelText="Hủy"
@@ -133,7 +130,7 @@ const ManagerCustomer: React.FC = () => {
             <DeleteOutlined
               style={{ color: "#ff4d4f", fontSize: 18, cursor: "pointer" }}
             />
-          </Popconfirm>
+          </Popconfirm> */}
         </Space>
       ),
     },
@@ -183,6 +180,13 @@ const ManagerCustomer: React.FC = () => {
         dataSource={filteredData}
         rowKey="user_id"
         search={false}
+        request={async () => {
+          handleRefresh();
+          return {
+            data: filteredData,
+            total: filteredData.length,
+          };
+        }}
         pagination={{
           current: currentPage,
           pageSize,
@@ -195,14 +199,14 @@ const ManagerCustomer: React.FC = () => {
         }}
         headerTitle="Danh sách người dùng"
         toolBarRender={() => [
-          <Button
-            key="create"
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setOpenModalAdd(true)}
-          >
-            Thêm khách hàng
-          </Button>,
+          // <Button
+          //   key="create"
+          //   type="primary"
+          //   icon={<PlusOutlined />}
+          //   onClick={() => setOpenModalAdd(true)}
+          // >
+          //   Thêm khách hàng
+          // </Button>,
         ]}
       />
 
@@ -210,11 +214,12 @@ const ManagerCustomer: React.FC = () => {
         open={openModalEdit}
         setOpen={setOpenModalEdit}
         data={editData}
+        fetchCustomer={fetchCustomer}
       />
       <ModalAddNew
         open={openModalAdd}
         setOpen={setOpenModalAdd}
-        onSubmit={() => {}}
+        onSubmit={handleAddCustomer}
       />
     </div>
   );

@@ -63,10 +63,10 @@ const ModelConfirmPay: React.FC<ModelConfirmPayProps> = ({
         <Row gutter={[16, 8]}>
           <Col span={12}>
             <Text strong>Khách hàng:</Text>
-            <div>{customer.name}</div>
-            <div>{customer.phone}</div>
-            {customer.email && <div>{customer.email}</div>}
-            {customer.address && <div>{customer.address}</div>}
+            <div>{customer?.name}</div>
+            <div>{customer?.phone}</div>
+            {customer?.email && <div>{customer?.email}</div>}
+            {customer?.address && <div>{customer?.address}</div>}
           </Col>
           <Col span={12}>
             <Text strong>Người tạo đơn:</Text>

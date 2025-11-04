@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Modal, Form, Input, Select, InputNumber } from "antd";
 import { Value } from "sass";
 import { updateProduct } from "../../../services/Products";
+import { toast } from "react-toastify";
 
 const { Option } = Select;
 interface Category {
@@ -62,9 +63,11 @@ const ModalEditProduct: React.FC<ModalEditProductProps> = ({
         productId: data.productId,
       });
       console.log(res);
+      toast.success("Cập nhật sản phẩm thành công");
       setOpen(false);
       fetchProducts();
     } catch (error) {
+      toast.error("Cập nhật sản phẩm thất bại");
       console.error(error);
     }
   };

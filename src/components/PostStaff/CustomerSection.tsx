@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import {
   Card,
   Input,
@@ -10,6 +10,7 @@ import {
   QRCode,
   message,
   AutoComplete,
+  Descriptions,
 } from "antd";
 import {
   PlusOutlined,
@@ -19,7 +20,13 @@ import {
 } from "@ant-design/icons";
 import Payment from "./Payment";
 import ModelConfirmPay from "./ModelComfirmPay";
-
+import { createNewCustomer, getAllCustomers } from "../../services/Customer";
+import { Customers } from "../../type/Customer";
+import { Promotion } from "../../type/Promotion";
+import { getAllProducts } from "../../services/Products";
+import { getAllPromotions } from "../../services/Promotion";
+import { describe } from "node:test";
+import { toast } from "react-toastify";
 const CustomerSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
@@ -28,16 +35,23 @@ const CustomerSection = () => {
   const [promoCode, setPromoCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [amount, setAmount] = useState(250000);
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  const [searchValue, setSearchValue] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
+  const [selectedPromo, setSelectedPromo] = useState<Promotion | null>(null);
+  const [searchValue, setSearchValue] = useState<string | number>("");
   const [open, setOpen] = useState(false);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [promotion, setPromotion] = useState<Promotion[]>([]);
+  const [searchPromo, setSearchPromo] = useState<string | "">("");
+
   // 🧍 Fake dữ liệu khách hàng
-  const fakeCustomer = {
-    name: "Nguyễn Văn A",
-    phone: "0901234567",
-    email: "nguyenvana@gmail.com",
-    address: "123 Nguyễn Trãi, Quận 1, TP.HCM",
-  };
+  // const selectedCustomer = {
+  //   name: "Nguyễn Văn A",
+  //   phone: "0901234567",
+  //   email: "nguyenvana@gmail.com",
+  //   address: "123 Nguyễn Trãi, Quận 1, TP.HCM",
+  // };
   const fakeProduct = {
     name: "Tour Đà Lạt 3N2Đ",
     quantity: 2,
@@ -70,41 +84,52 @@ const CustomerSection = () => {
       price: 900000,
     },
   ];
-  const customers = [
-    {
-      id: "KH001",
-      name: "Nguyễn Văn A",
-      phone: "0909123456",
-      email: "vana@example.com",
-      address: "Hà Nội",
-    },
-    {
-      id: "KH002",
-      name: "Trần Thị B",
-      phone: "0988765432",
-      email: "thib@example.com",
-      address: "TP.HCM",
-    },
-    {
-      id: "KH003",
-      name: "Lê Văn C",
-      phone: "0911222333",
-      email: "vanc@example.com",
-      address: "Đà Nẵng",
-    },
-  ];
+  const fetchCustomer = async () => {
+    const res = await getAllCustomers();
+    setCustomers(res);
+    console.log(res);
+  };
+  const fetchPromotion = async () => {
+    const res = await getAllPromotions();
+
+    const now = Date.now();
+
+    const promotionData = res.filter((promo) => {
+      const start = new Date(promo.startDate).getTime();
+      const end = new Date(promo.endDate).getTime();
+
+      return start <= now && end >= now && promo.status === "active";
+    });
+
+    setPromotion(promotionData);
+  };
+
+  //
+  useEffect(() => {
+    fetchCustomer();
+    fetchPromotion();
+  }, []);
 
   // 🔹 Lọc khách hàng theo từ khóa
+  const searchStr = String(searchValue || "").toLowerCase();
   const filteredCustomers = customers
     .filter(
       (c) =>
-        c.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        c.id.toLowerCase().includes(searchValue.toLowerCase())
+        c.name.toLowerCase().includes(searchStr) ||
+        c.customerId.toString().toLowerCase().includes(searchStr)
     )
     .map((c) => ({
-      value: c.name,
-      label: `${c.id} - ${c.name}`,
+      value: c.customerId,
+      label: `${c.customerId} - ${c.name}`,
       customer: c,
+    }));
+  const searchPromoStr = String(searchPromo || "").toLowerCase();
+  const filteredPromotion = promotion
+    .filter((p) => p.promoCode.toLowerCase().includes(searchPromoStr))
+    .map((promo) => ({
+      value: promo.promoId,
+      label: `${promo.promoCode} - ${promo.description}`,
+      promotion: promo,
     }));
 
   // 🔹 Dữ liệu QR
@@ -118,42 +143,83 @@ const CustomerSection = () => {
 
   // ✅ Áp dụng khuyến mãi
   const handleApplyPromo = () => {
-    if (promoCode.trim().toUpperCase() === "SALE50") {
-      const discountValue = amount * 0.5;
+    if (!selectedPromo) {
+      setDiscount(0);
+      message.error("❌ Vui lòng chọn mã khuyến mãi hợp lệ");
+      return;
+    }
+
+    const now = Date.now();
+    const start = new Date(selectedPromo.startDate).getTime();
+    const end = new Date(selectedPromo.endDate).getTime();
+
+    if (start <= now && now <= end && selectedPromo.status === "active") {
+      if (selectedPromo.minOrderAmount > amount) {
+        toast.warning("Đơn hàng chưa đủ giá trị để áp dụng");
+        return;
+      }
+      if (
+        selectedPromo.usageLimit <= selectedPromo.usedCount &&
+        selectedPromo.usageLimit != 0
+      ) {
+        toast.warning("Khuyến mãi đã đạt số lần sử dụng tối đa");
+        return;
+      }
+      let discountValue = 0;
+
+      if (selectedPromo.discountType === "percent") {
+        // Giảm theo phần trăm
+        discountValue = amount * (selectedPromo.discountValue / 100);
+      } else if (selectedPromo.discountType === "fixed") {
+        // Giảm theo số tiền cố định
+        discountValue = selectedPromo.discountValue;
+      }
+
       setDiscount(discountValue);
       message.success(
-        `🎉 Áp dụng mã SALE50 - Giảm ${discountValue.toLocaleString()} VNĐ`
-      );
-    } else if (promoCode.trim().toUpperCase() === "SALE10") {
-      const discountValue = amount * 0.1;
-      setDiscount(discountValue);
-      message.success(
-        `🎉 Áp dụng mã SALE10 - Giảm ${discountValue.toLocaleString()} VNĐ`
+        `🎉 Áp dụng mã ${
+          selectedPromo.promoCode
+        } - Giảm ${discountValue.toLocaleString()} VNĐ`
       );
     } else {
       setDiscount(0);
-      message.error("❌ Mã khuyến mãi không hợp lệ");
+      message.error("❌ Mã khuyến mãi đã hết hạn hoặc không còn hiệu lực");
     }
   };
 
   // ✅ Lưu thông tin khách hàng
-  const handleOk = () => {
-    form.validateFields().then((values) => {
-      const customerData = {
+  const handleOk = async () => {
+    try {
+      // Validate form
+      const values = await form.validateFields();
+
+      // Gọi API tạo khách mới
+      const newCustomer = await createNewCustomer({
         name: values.name,
         phone: values.phone || null,
         email: values.email || null,
         address: values.address || null,
-        payment_method: paymentMethod,
-        promo_code: promoCode || null,
-        total_price: amount - discount,
-      };
-      console.log("✅ Dữ liệu khách hàng mới:", customerData);
+      } as Customers);
+
+      // Thêm khách mới vào state
+      setCustomers((prev) => [...prev, newCustomer]);
+
+      // Chọn khách mới luôn
+      setSelectedCustomer(newCustomer);
+      setSearchValue(`${newCustomer.customerId} - ${newCustomer.name}`);
+
+      // Reset form và đóng modal
       setIsModalOpen(false);
       form.resetFields();
       setPromoCode("");
       setDiscount(0);
-    });
+
+      message.success(`✅ Thêm khách hàng ${newCustomer.name} thành công!`);
+      console.log("Khách hàng mới:", newCustomer);
+    } catch (error: any) {
+      message.error(`❌ Thêm khách hàng thất bại: ${error.message || error}`);
+      console.error(error);
+    }
   };
 
   const handlePaymentConfirm = () => {
@@ -164,6 +230,13 @@ const CustomerSection = () => {
   const handleSelectCustomer = (value: string, option: any) => {
     setSelectedCustomer(option.customer);
     message.success(`✅ Đã chọn khách hàng: ${option.customer.name}`);
+    setSearchValue(`${option.customer.customerId} - ${option.customer.name}`);
+  };
+  const handleSelectPromotion = (value: string, option: any) => {
+    setSelectedPromo(option.promotion);
+    setSearchPromo(
+      `${option.promotion.promoCode} - ${option.promotion.description}`
+    );
   };
 
   return (
@@ -182,6 +255,7 @@ const CustomerSection = () => {
               prefix={<UserOutlined />}
             />
           </AutoComplete>
+
           <Tooltip title="Thêm khách hàng mới">
             <Button
               type="primary"
@@ -211,17 +285,51 @@ const CustomerSection = () => {
 
         {/* 🔸 Ô nhập mã khuyến mãi */}
         <div className="flex gap-2 mb-3">
-          <Input
-            placeholder="Nhập mã khuyến mãi"
-            value={promoCode}
-            onChange={(e) => setPromoCode(e.target.value)}
-            prefix={<GiftOutlined />}
-          />
+          <AutoComplete
+            style={{ flex: 1 }}
+            options={filteredPromotion}
+            value={searchPromo}
+            onChange={setSearchPromo}
+            onSelect={handleSelectPromotion}
+          >
+            {/* <Input
+              placeholder="Nhập mã hoặc tên khách hàng (F4)"
+              prefix={<UserOutlined />}
+            /> */}
+            <Input
+              placeholder="Nhập mã khuyến mãi"
+              // value={promoCode}
+              // onChange={(e) => setPromoCode(e.target.value)}
+              prefix={<GiftOutlined />}
+            />
+          </AutoComplete>
+
           <Button type="default" onClick={handleApplyPromo}>
             Áp dụng
           </Button>
         </div>
-
+        {/* Hiển thị khuyến mãi đã chọn với nút X */}
+        {selectedPromo && (
+          <div
+            className="mt-2 p-2 bg-gray-100 rounded flex items-center justify-between"
+            style={{ maxWidth: 300 }}
+          >
+            <span>
+              {selectedPromo.promoCode} - {selectedPromo.description}
+            </span>
+            <Button
+              type="text"
+              size="small"
+              onClick={() => {
+                setSelectedPromo(null);
+                setSearchPromo("");
+                setDiscount(0);
+              }}
+            >
+              ×
+            </Button>
+          </div>
+        )}
         {/* 🔸 Hiển thị tổng tiền sau khuyến mãi */}
         <div className="text-right mb-3 font-semibold">
           <div>Giá gốc: {amount.toLocaleString()} VNĐ</div>
@@ -306,7 +414,7 @@ const CustomerSection = () => {
         onClose={() => setIsQRModalOpen(false)}
         onConfirm={handlePaymentConfirm}
         paymentInfo={paymentInfo}
-        customer={fakeCustomer}
+        customer={selectedCustomer}
         createdBy={fakeCreatedBy}
         createdAt={fakeCreatedAt}
         product={fakeProduct}
@@ -317,7 +425,7 @@ const CustomerSection = () => {
         onCancel={() => setOpen(false)}
         onConfirm={() => alert("Thanh toán thành công!")}
         products={fakeProducts}
-        customer={fakeCustomer}
+        customer={selectedCustomer}
         createdBy={fakeCreatedBy}
         createdAt={fakeCreatedAt}
       />

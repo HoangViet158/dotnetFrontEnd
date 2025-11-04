@@ -4,30 +4,22 @@ import {
   ProFormText,
   ProFormSelect,
   ProFormDigit,
-  ProFormDatePicker,
+  ProFormDateTimePicker,
   ProFormGroup,
 } from "@ant-design/pro-components";
 import { GiftOutlined } from "@ant-design/icons";
-import { Tag } from "antd";
-
-interface Promotion {
-  promo_code: string;
-  description?: string;
-  discount_type: "percent" | "fixed";
-  discount_value: number;
-  start_date: string;
-  end_date: string;
-  min_order_amount: number;
-  usage_limit: number;
-  status: "active" | "inactive";
-}
+import { toast } from "react-toastify";
+import dayjs from "dayjs";
+import { createNewPromotion } from "../../../services/Promotion";
+import { Promotion } from "../../../type/Promotion";
 
 interface ModalAddNewProps {
   open: boolean;
   setOpen: (open: boolean) => void;
+  reload?: () => void; // callback refresh danh sách
 }
 
-const ModalAddNew: React.FC<ModalAddNewProps> = ({ open, setOpen }) => {
+const ModalAddNew: React.FC<ModalAddNewProps> = ({ open, setOpen, reload }) => {
   return (
     <ModalForm<Promotion>
       title={
@@ -47,16 +39,40 @@ const ModalAddNew: React.FC<ModalAddNewProps> = ({ open, setOpen }) => {
       grid
       rowProps={{ gutter: [16, 8] }}
       onFinish={async (values) => {
-        console.log("🎯 Dữ liệu thêm mới:", values);
+        try {
+          // map form values về interface Promotion
+          const payload: Promotion = {
+            promoCode: values.promoCode,
+            description: values.description,
+            discountType: values.discountType, // "percent" | "amount"
+            discountValue: values.discountValue,
+            startDate: dayjs(values.startDate).toISOString(),
+            endDate: dayjs(values.endDate).toISOString(),
+            minOrderAmount: values.minOrderAmount || 0,
+            usageLimit: values.usageLimit || 0,
+            usedCount: 0,
+            status: values.status,
+          };
 
-        setOpen(false);
-        return true;
+          if (new Date(payload.endDate) < new Date(payload.startDate)) {
+            toast.error("Ngày kết thúc phải lớn hơn ngày bắt đầu!");
+            return false;
+          }
+
+          await createNewPromotion(payload);
+          toast.success("Thêm khuyến mãi thành công!");
+          reload?.(); // refresh danh sách
+          setOpen(false);
+          return true;
+        } catch (err: any) {
+          toast.error(err.response?.data?.message || "Lỗi server!");
+          return false;
+        }
       }}
     >
-      {/* Thông tin cơ bản */}
       <ProFormGroup title="Thông tin khuyến mãi">
         <ProFormText
-          name="promo_code"
+          name="promoCode"
           label="Mã khuyến mãi"
           placeholder="VD: SUMMER2025"
           colProps={{ span: 12 }}
@@ -70,20 +86,19 @@ const ModalAddNew: React.FC<ModalAddNewProps> = ({ open, setOpen }) => {
         />
       </ProFormGroup>
 
-      {/* Giảm giá */}
       <ProFormGroup title="Giảm giá">
         <ProFormSelect
-          name="discount_type"
+          name="discountType"
           label="Loại giảm"
           colProps={{ span: 12 }}
-          valueEnum={{
-            percent: "Giảm %",
-            fixed: "Giảm số tiền",
-          }}
+          options={[
+            { label: "% phần trăm", value: "percent" },
+            { label: "Tiền mặt", value: "fixed" },
+          ]}
           rules={[{ required: true, message: "Chọn loại giảm giá" }]}
         />
         <ProFormDigit
-          name="discount_value"
+          name="discountValue"
           label="Giá trị"
           colProps={{ span: 12 }}
           min={0}
@@ -91,46 +106,45 @@ const ModalAddNew: React.FC<ModalAddNewProps> = ({ open, setOpen }) => {
         />
       </ProFormGroup>
 
-      {/* Thời gian áp dụng */}
       <ProFormGroup title="Thời gian áp dụng">
-        <ProFormDatePicker
-          name="start_date"
+        <ProFormDateTimePicker
+          name="startDate"
           label="Ngày bắt đầu"
           colProps={{ span: 12 }}
-          rules={[{ required: true, message: "Chọn ngày bắt đầu" }]}
+          rules={[{ required: true }]}
         />
-        <ProFormDatePicker
-          name="end_date"
+        <ProFormDateTimePicker
+          name="endDate"
           label="Ngày kết thúc"
           colProps={{ span: 12 }}
-          rules={[{ required: true, message: "Chọn ngày kết thúc" }]}
+          rules={[{ required: true }]}
         />
       </ProFormGroup>
 
-      {/* Điều kiện & trạng thái */}
       <ProFormGroup title="Điều kiện & trạng thái">
         <ProFormDigit
-          name="min_order_amount"
-          label="Đơn hàng tối thiểu"
-          min={0}
-          placeholder="0 nếu không giới hạn"
+          name="minOrderAmount"
+          label="Đơn tối thiểu"
           colProps={{ span: 12 }}
+          min={0}
+          initialValue={0}
         />
         <ProFormDigit
-          name="usage_limit"
+          name="usageLimit"
           label="Giới hạn sử dụng"
-          min={0}
-          placeholder="0 nếu không giới hạn"
           colProps={{ span: 12 }}
+          min={0}
+          initialValue={0}
         />
         <ProFormSelect
           name="status"
           label="Trạng thái"
           colProps={{ span: 12 }}
-          valueEnum={{
-            active: <Tag color="green">Hoạt động</Tag>,
-            inactive: <Tag color="red">Ngưng</Tag>,
-          }}
+          options={[
+            { label: "Hoạt động", value: "active" },
+            { label: "Ngừng", value: "inactive" },
+          ]}
+          initialValue="active"
         />
       </ProFormGroup>
     </ModalForm>

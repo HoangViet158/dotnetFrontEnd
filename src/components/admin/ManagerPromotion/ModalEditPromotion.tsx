@@ -4,140 +4,139 @@ import {
   ProFormText,
   ProFormSelect,
   ProFormDigit,
-  ProFormDatePicker,
+  ProFormDateTimePicker,
   ProFormGroup,
 } from "@ant-design/pro-components";
-import { GiftOutlined } from "@ant-design/icons";
-import { Tag } from "antd";
+import { toast } from "react-toastify";
+import dayjs from "dayjs";
+import { updatePromotion } from "../../../services/Promotion";
+import { Promotion } from "../../../type/Promotion";
 
-interface Promotion {
-  promo_id: number;
-  promo_code: string;
-  description?: string;
-  discount_type: "percent" | "fixed";
-  discount_value: number;
-  start_date: string;
-  end_date: string;
-  min_order_amount: number;
-  usage_limit: number;
-  used_count: number;
-  status: "active" | "inactive";
-}
-
-interface ModalEditPromotionProps {
+interface ModalEditProps {
   open: boolean;
   setOpen: (open: boolean) => void;
-  data?: Promotion | null;
+  data: Promotion | null;
+  reload?: () => void;
 }
 
-const ModalEditPromotion: React.FC<ModalEditPromotionProps> = ({
+const ModalEditPromotion: React.FC<ModalEditProps> = ({
   open,
   setOpen,
   data,
+  reload,
 }) => {
+  if (!data) return null;
+
   return (
     <ModalForm<Promotion>
-      title={
-        <div className="flex items-center gap-2 text-lg font-semibold text-[#1677ff]">
-          <GiftOutlined />
-          {data ? "Chỉnh sửa khuyến mãi" : "Thêm khuyến mãi mới"}
-        </div>
-      }
-      width={750}
+      title={`Chỉnh sửa: ${data.promoCode}`}
       open={open}
+      width={750}
       layout="horizontal"
-      modalProps={{
-        onCancel: () => setOpen(false),
-        destroyOnClose: true,
-        centered: true,
-      }}
       grid
-      rowProps={{ gutter: [16, 8] }}
-      onFinish={async (values) => {
-        console.log("✅ Dữ liệu gửi đi:", values);
-        setOpen(false);
-        return true;
+      initialValues={{
+        ...data,
+        startDate: dayjs(data.startDate),
+        endDate: dayjs(data.endDate),
       }}
-      initialValues={data ?? {}}
+      modalProps={{
+        destroyOnClose: true,
+        onCancel: () => setOpen(false),
+      }}
+      onFinish={async (values) => {
+        try {
+          const payload: Promotion = {
+            ...data,
+            promoCode: values.promoCode,
+            description: values.description,
+            discountType: values.discountType,
+            discountValue: values.discountValue,
+            startDate: dayjs(values.startDate).toISOString(),
+            endDate: dayjs(values.endDate).toISOString(),
+            minOrderAmount: values.minOrderAmount || 0,
+            usageLimit: values.usageLimit || 0,
+            status: values.status,
+            usedCount: data.usedCount,
+          };
+
+          if (new Date(payload.endDate) < new Date(payload.startDate)) {
+            toast.error("Ngày kết thúc phải lớn hơn ngày bắt đầu!");
+            return false;
+          }
+
+          await updatePromotion(payload);
+          toast.success("Cập nhật thành công!");
+          reload?.();
+          setOpen(false);
+          return true;
+        } catch (err: any) {
+          toast.error(err.response?.data?.message || "Lỗi server!");
+          return false;
+        }
+      }}
     >
-      {/* Thông tin cơ bản */}
       <ProFormGroup title="Thông tin khuyến mãi">
         <ProFormText
-          name="promo_code"
+          name="promoCode"
           label="Mã khuyến mãi"
-          placeholder="VD: SUMMER2025"
-          colProps={{ span: 12 }}
-          rules={[{ required: true, message: "Vui lòng nhập mã khuyến mãi" }]}
-        />
-        <ProFormText
-          name="description"
-          label="Mô tả"
-          placeholder="VD: Giảm giá mùa hè"
+          disabled
           colProps={{ span: 12 }}
         />
+        <ProFormText name="description" label="Mô tả" colProps={{ span: 12 }} />
       </ProFormGroup>
 
-      {/* Giảm giá */}
       <ProFormGroup title="Giảm giá">
         <ProFormSelect
-          name="discount_type"
+          name="discountType"
           label="Loại giảm"
-          valueEnum={{
-            percent: "Giảm %",
-            fixed: "Giảm số tiền",
-          }}
           colProps={{ span: 12 }}
-          rules={[{ required: true, message: "Chọn loại giảm giá" }]}
+          options={[
+            { label: "% phần trăm", value: "percent" },
+            { label: "Tiền mặt", value: "fixed" },
+          ]}
         />
         <ProFormDigit
-          name="discount_value"
+          name="discountValue"
           label="Giá trị"
           min={0}
           colProps={{ span: 12 }}
-          rules={[{ required: true, message: "Nhập giá trị giảm" }]}
         />
       </ProFormGroup>
 
-      {/* Thời gian */}
       <ProFormGroup title="Thời gian áp dụng">
-        <ProFormDatePicker
-          name="start_date"
+        <ProFormDateTimePicker
+          name="startDate"
           label="Ngày bắt đầu"
           colProps={{ span: 12 }}
-          rules={[{ required: true, message: "Chọn ngày bắt đầu" }]}
         />
-        <ProFormDatePicker
-          name="end_date"
+        <ProFormDateTimePicker
+          name="endDate"
           label="Ngày kết thúc"
           colProps={{ span: 12 }}
-          rules={[{ required: true, message: "Chọn ngày kết thúc" }]}
         />
       </ProFormGroup>
 
-      {/* Điều kiện & Trạng thái */}
-      <ProFormGroup title="Điều kiện & Trạng thái">
+      <ProFormGroup title="Điều kiện & trạng thái">
         <ProFormDigit
-          name="min_order_amount"
-          label="Đơn hàng tối thiểu"
+          name="minOrderAmount"
+          label="Đơn tối thiểu"
           min={0}
-          placeholder="0 nếu không giới hạn"
           colProps={{ span: 12 }}
         />
         <ProFormDigit
-          name="usage_limit"
+          name="usageLimit"
           label="Giới hạn sử dụng"
           min={0}
-          placeholder="0 nếu không giới hạn"
           colProps={{ span: 12 }}
         />
         <ProFormSelect
           name="status"
           label="Trạng thái"
-          valueEnum={{
-            active: <Tag color="green">Hoạt động</Tag>,
-            inactive: <Tag color="red">Ngưng</Tag>,
-          }}
           colProps={{ span: 12 }}
+          options={[
+            { label: "Hoạt động", value: "active" },
+            { label: "Ngừng", value: "inactive" },
+          ]}
         />
       </ProFormGroup>
     </ModalForm>

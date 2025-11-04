@@ -13,6 +13,7 @@ import ManagerRole from "../components/admin/ManagerRole/ManagerRole";
 import Login from "../components/Auth/Login";
 import { Bounce, ToastContainer } from "react-toastify";
 import ProtectedRoute from "./ProtectedRoute/ProtectedRoute";
+import Register from "../components/Auth/Register";
 
 function App() {
   return (
@@ -20,7 +21,9 @@ function App() {
       <Routes>
         <Route path="/" element={<SaleManager />}></Route>
         <Route path="/login" element={<Login />}></Route>
-        <Route element={<ProtectedRoute requiredRole="admin" />}>
+        <Route path="/register" element={<Register />}></Route>
+        {/* <Route element={<ProtectedRoute requiredRole="admin" />}> */}
+        <Route>
           <Route path="/admin" element={<Admin />}>
             <Route path="/admin/managerUser" element={<ManagerUser />}></Route>
             <Route
