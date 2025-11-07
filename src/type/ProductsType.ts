@@ -1,10 +1,13 @@
 export interface ProductType {
-  ProductId?: number;
-  ProductName: string;
-  Barcode: string;
-  Price: number;
-  CategoryId: number;
-  SupplierId: number;
-  Unit: string;
-  CreateAt?: string;
+  productId: number;
+  productName: string;
+  barcode: string;
+  price: number;
+  categoryId: number;
+  categoryName: string;
+  supplierId: number;
+  supplierName?: string | null;
+  unit: string;
+  currentStock?: number | null;
+  createdAt: string;
 }

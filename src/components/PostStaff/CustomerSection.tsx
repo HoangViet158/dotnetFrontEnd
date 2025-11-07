@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   Input,
@@ -17,33 +17,50 @@ import {
   UserOutlined,
   QrcodeOutlined,
   GiftOutlined,
+  DollarOutlined,
+  CreditCardOutlined,
 } from "@ant-design/icons";
+import { toast } from "react-toastify";
+
 import Payment from "./Payment";
+import type { Customer } from "../../type/Customer";
+import type { Promotion } from "../../type/Promotion";
+import type { CartItem, OrderResponse } from "../../type/OrderType";
+
 import ModelConfirmPay from "./ModelComfirmPay";
 import { createNewCustomer, getAllCustomers } from "../../services/Customer";
-import { Customers } from "../../type/Customer";
-import { Promotion } from "../../type/Promotion";
-import { getAllProducts } from "../../services/Products";
 import { getAllPromotions } from "../../services/Promotion";
-import { describe } from "node:test";
-import { toast } from "react-toastify";
-const CustomerSection = () => {
+import { createOrder } from "../../services/Order";
+import type { ResponseApi } from "../../type/axios";
+
+
+
+interface CustomerSectionProps {
+  cart: CartItem[];
+  clearCart: () => void;
+}
+
+const CustomerSection: React.FC<CustomerSectionProps> = ({ cart, clearCart }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [form] = Form.useForm();
   const [promoCode, setPromoCode] = useState("");
   const [discount, setDiscount] = useState(0);
-  const [amount, setAmount] = useState(250000);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
-  );
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const clearCustomerState = () => {
+    setSelectedCustomer(null);
+    setSelectedPromo(null);
+    setSearchValue("");
+    setSearchPromo("");
+  };
   const [selectedPromo, setSelectedPromo] = useState<Promotion | null>(null);
   const [searchValue, setSearchValue] = useState<string | number>("");
   const [open, setOpen] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [promotion, setPromotion] = useState<Promotion[]>([]);
   const [searchPromo, setSearchPromo] = useState<string | "">("");
+  const [createdOrder, setCreatedOrder] = useState<OrderResponse | null>(null);
 
   // 🧍 Fake dữ liệu khách hàng
   // const selectedCustomer = {
@@ -52,56 +69,18 @@ const CustomerSection = () => {
   //   email: "nguyenvana@gmail.com",
   //   address: "123 Nguyễn Trãi, Quận 1, TP.HCM",
   // };
-  const fakeProduct = {
-    name: "Tour Đà Lạt 3N2Đ",
-    quantity: 2,
-    price: 1750000,
-    total: 3500000,
-    startDate: "12/11/2025",
-  };
   const fakeCreatedBy = "Admin Nguyễn";
   const fakeCreatedAt = "11/10/2025 14:35";
-  const fakeProducts = [
-    {
-      key: "1",
-      name: "Tour Đà Lạt 3N2Đ",
-      image: "https://picsum.photos/80?1",
-      quantity: 2,
-      price: 1500000,
-    },
-    {
-      key: "2",
-      name: "Tour Phú Quốc 4N3Đ",
-      image: "https://picsum.photos/80?2",
-      quantity: 1,
-      price: 2500000,
-    },
-    {
-      key: "3",
-      name: "Tour Nha Trang 2N1Đ",
-      image: "https://picsum.photos/80?3",
-      quantity: 3,
-      price: 900000,
-    },
-  ];
+
   const fetchCustomer = async () => {
     const res = await getAllCustomers();
-    setCustomers(res);
-    console.log(res);
+    setCustomers(res.data);
+    console.log(res.data)
   };
+
   const fetchPromotion = async () => {
     const res = await getAllPromotions();
-
-    const now = Date.now();
-
-    const promotionData = res.filter((promo) => {
-      const start = new Date(promo.startDate).getTime();
-      const end = new Date(promo.endDate).getTime();
-
-      return start <= now && end >= now && promo.status === "active";
-    });
-
-    setPromotion(promotionData);
+    setPromotion(res.data);
   };
 
   //
@@ -116,13 +95,14 @@ const CustomerSection = () => {
     .filter(
       (c) =>
         c.name.toLowerCase().includes(searchStr) ||
-        c.customerId.toString().toLowerCase().includes(searchStr)
+        c.customerId?.toString().toLowerCase().includes(searchStr)
     )
     .map((c) => ({
       value: c.customerId,
       label: `${c.customerId} - ${c.name}`,
       customer: c,
     }));
+
   const searchPromoStr = String(searchPromo || "").toLowerCase();
   const filteredPromotion = promotion
     .filter((p) => p.promoCode.toLowerCase().includes(searchPromoStr))
@@ -132,81 +112,26 @@ const CustomerSection = () => {
       promotion: promo,
     }));
 
-  // 🔹 Dữ liệu QR
-  const paymentInfo = {
-    amount: amount - discount,
-    accountName: "TenDev Web Design",
-    bank: "MB Bank",
-    accountNumber: "0123456789",
-    qrValue: "https://img.vietqr.io/image/970422-0123456789-compact.png",
-  };
-
-  // ✅ Áp dụng khuyến mãi
-  const handleApplyPromo = () => {
-    if (!selectedPromo) {
-      setDiscount(0);
-      message.error("❌ Vui lòng chọn mã khuyến mãi hợp lệ");
-      return;
-    }
-
-    const now = Date.now();
-    const start = new Date(selectedPromo.startDate).getTime();
-    const end = new Date(selectedPromo.endDate).getTime();
-
-    if (start <= now && now <= end && selectedPromo.status === "active") {
-      if (selectedPromo.minOrderAmount > amount) {
-        toast.warning("Đơn hàng chưa đủ giá trị để áp dụng");
-        return;
-      }
-      if (
-        selectedPromo.usageLimit <= selectedPromo.usedCount &&
-        selectedPromo.usageLimit != 0
-      ) {
-        toast.warning("Khuyến mãi đã đạt số lần sử dụng tối đa");
-        return;
-      }
-      let discountValue = 0;
-
-      if (selectedPromo.discountType === "percent") {
-        // Giảm theo phần trăm
-        discountValue = amount * (selectedPromo.discountValue / 100);
-      } else if (selectedPromo.discountType === "fixed") {
-        // Giảm theo số tiền cố định
-        discountValue = selectedPromo.discountValue;
-      }
-
-      setDiscount(discountValue);
-      message.success(
-        `🎉 Áp dụng mã ${
-          selectedPromo.promoCode
-        } - Giảm ${discountValue.toLocaleString()} VNĐ`
-      );
-    } else {
-      setDiscount(0);
-      message.error("❌ Mã khuyến mãi đã hết hạn hoặc không còn hiệu lực");
-    }
-  };
-
   // ✅ Lưu thông tin khách hàng
   const handleOk = async () => {
     try {
-      // Validate form
-      const values = await form.validateFields();
+      // // Validate form
+      // const values = await form.validateFields();
 
-      // Gọi API tạo khách mới
-      const newCustomer = await createNewCustomer({
-        name: values.name,
-        phone: values.phone || null,
-        email: values.email || null,
-        address: values.address || null,
-      } as Customers);
+      // // Gọi API tạo khách mới
+      // const newCustomer = await createNewCustomer({
+      //   name: values.name,
+      //   phone: values.phone || null,
+      //   email: values.email || null,
+      //   address: values.address || null,
+      // } as Customers);
 
-      // Thêm khách mới vào state
-      setCustomers((prev) => [...prev, newCustomer]);
+      // // Thêm khách mới vào state
+      // setCustomers((prev) => [...prev, newCustomer]);
 
-      // Chọn khách mới luôn
-      setSelectedCustomer(newCustomer);
-      setSearchValue(`${newCustomer.customerId} - ${newCustomer.name}`);
+      // // Chọn khách mới luôn
+      // setSelectedCustomer(newCustomer);
+      // setSearchValue(`${newCustomer.customerId} - ${newCustomer.name}`);
 
       // Reset form và đóng modal
       setIsModalOpen(false);
@@ -214,30 +139,70 @@ const CustomerSection = () => {
       setPromoCode("");
       setDiscount(0);
 
-      message.success(`✅ Thêm khách hàng ${newCustomer.name} thành công!`);
-      console.log("Khách hàng mới:", newCustomer);
+      // message.success(`✅ Thêm khách hàng ${newCustomer.data} thành công!`);
+      // console.log("Khách hàng mới:", newCustomer);
     } catch (error: any) {
       message.error(`❌ Thêm khách hàng thất bại: ${error.message || error}`);
       console.error(error);
     }
   };
 
-  const handlePaymentConfirm = () => {
-    message.success("✅ Thanh toán ví điện tử đã xác nhận!");
-    setIsQRModalOpen(false);
-  };
+  // const handlePaymentConfirm = () => {
+  //   message.success("Thanh toán ví điện tử đã xác nhận!");
+  //   setIsQRModalOpen(false);
+  // };
 
-  const handleSelectCustomer = (value: string, option: any) => {
+  const handleSelectCustomer = (value: string | number, option: any) => {
     setSelectedCustomer(option.customer);
-    message.success(`✅ Đã chọn khách hàng: ${option.customer.name}`);
+    message.success(`Đã chọn khách hàng: ${option.customer.name}`);
     setSearchValue(`${option.customer.customerId} - ${option.customer.name}`);
   };
-  const handleSelectPromotion = (value: string, option: any) => {
+  const handleSelectPromotion = (value: string | number, option: any) => {
     setSelectedPromo(option.promotion);
     setSearchPromo(
       `${option.promotion.promoCode} - ${option.promotion.description}`
     );
   };
+
+  const fakeUserId = 5; //tạm thời hardcode, sau có thể lấy từ context hoặc session
+
+  const handleCreateOrder = async () => {
+    if (!selectedCustomer) {
+      toast.error("Vui lòng chọn khách hàng trước khi thanh toán");
+      return false;
+    }
+
+    if (cart.length === 0) {
+      toast.error("Chưa có sản phẩm nào trong giỏ hàng");
+      return false;
+    }
+
+    const orderData = {
+      customerId: selectedCustomer.customerId,
+      userId: fakeUserId,
+      promoId: selectedPromo?.promoId,
+      items: cart.map((item) => ({ productId: item.productId, quantity: item.quantity })),
+    };
+
+    try {
+      const res = await createOrder(orderData);
+      if (paymentMethod == "bank_transfer") {
+        setIsQRModalOpen(true);
+      } else {
+        setOpen(true);
+      }
+
+      setCreatedOrder(res.data);
+      toast.success("Tạo đơn hàng thành công!");
+      return true;
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Tạo đơn hàng thất bại!");
+      return false;
+    }
+  };
+
+
 
   return (
     <>
@@ -265,7 +230,7 @@ const CustomerSection = () => {
           </Tooltip>
         </div>
 
-        {/* 🔸 Hiển thị khách hàng đã chọn */}
+        {/* Hiển thị khách hàng đã chọn */}
         {selectedCustomer && (
           <div className="bg-gray-50 p-2 rounded-md mb-3 text-sm">
             <div>
@@ -283,7 +248,7 @@ const CustomerSection = () => {
           </div>
         )}
 
-        {/* 🔸 Ô nhập mã khuyến mãi */}
+        {/* Ô nhập mã khuyến mãi */}
         <div className="flex gap-2 mb-3">
           <AutoComplete
             style={{ flex: 1 }}
@@ -292,19 +257,14 @@ const CustomerSection = () => {
             onChange={setSearchPromo}
             onSelect={handleSelectPromotion}
           >
-            {/* <Input
-              placeholder="Nhập mã hoặc tên khách hàng (F4)"
-              prefix={<UserOutlined />}
-            /> */}
             <Input
               placeholder="Nhập mã khuyến mãi"
-              // value={promoCode}
-              // onChange={(e) => setPromoCode(e.target.value)}
               prefix={<GiftOutlined />}
             />
           </AutoComplete>
 
-          <Button type="default" onClick={handleApplyPromo}>
+          <Button type="default">
+            {/* <Button type="default" onClick={handleApplyPromo}> */}
             Áp dụng
           </Button>
         </div>
@@ -330,38 +290,29 @@ const CustomerSection = () => {
             </Button>
           </div>
         )}
-        {/* 🔸 Hiển thị tổng tiền sau khuyến mãi */}
-        <div className="text-right mb-3 font-semibold">
-          <div>Giá gốc: {amount.toLocaleString()} VNĐ</div>
-          {discount > 0 && (
-            <div className="text-green-600">
-              - Giảm: {discount.toLocaleString()} VNĐ
-            </div>
-          )}
-          <div className="text-blue-600 text-lg">
-            Tổng cộng: {(amount - discount).toLocaleString()} VNĐ
-          </div>
-        </div>
 
-        {/* 🔸 Phương thức thanh toán */}
+        {/* Phương thức thanh toán */}
         <Radio.Group
           onChange={(e) => setPaymentMethod(e.target.value)}
           value={paymentMethod}
           className="mb-2 flex justify-between w-full "
         >
-          <Radio value="cash">💵 Tiền mặt</Radio>
-          <Radio value="e-wallet">📱 Ví điện tử</Radio>
+          <Radio value="cash"><DollarOutlined /> Tiền mặt</Radio>
+          <Radio value="bank_transfer"><CreditCardOutlined /> Chuyển khoản</Radio>
         </Radio.Group>
 
-        {paymentMethod === "e-wallet" && (
+        {paymentMethod === "bank_transfer" && (
           <Button
-            icon={<QrcodeOutlined />}
+            // icon={<QrcodeOutlined />}
             type="primary"
             block
             style={{ marginTop: 12 }}
-            onClick={() => setIsQRModalOpen(true)}
+            // onClick={() => setIsQRModalOpen(true)}
+            onClick={async () => {
+              await handleCreateOrder()
+            }}
           >
-            Thanh toán qua ví
+            Tạo hóa đơn
           </Button>
         )}
 
@@ -370,9 +321,11 @@ const CustomerSection = () => {
             type="primary"
             block
             style={{ marginTop: 12 }}
-            onClick={() => setOpen(true)}
+            onClick={async () => {
+              await handleCreateOrder()
+            }}
           >
-            Hoàn thành thanh toán
+            Tạo hóa đơn
           </Button>
         )}
       </Card>
@@ -412,22 +365,24 @@ const CustomerSection = () => {
       <Payment
         open={isQRModalOpen}
         onClose={() => setIsQRModalOpen(false)}
-        onConfirm={handlePaymentConfirm}
-        paymentInfo={paymentInfo}
+        order={createdOrder}
         customer={selectedCustomer}
         createdBy={fakeCreatedBy}
         createdAt={fakeCreatedAt}
-        product={fakeProduct}
+        clearCart={clearCart}
+        clearCustomerState={clearCustomerState}
       />
+
 
       <ModelConfirmPay
         open={open}
         onCancel={() => setOpen(false)}
-        onConfirm={() => alert("Thanh toán thành công!")}
-        products={fakeProducts}
+        order={createdOrder}
         customer={selectedCustomer}
         createdBy={fakeCreatedBy}
         createdAt={fakeCreatedAt}
+        clearCart={clearCart}
+        clearCustomerState={clearCustomerState}
       />
     </>
   );

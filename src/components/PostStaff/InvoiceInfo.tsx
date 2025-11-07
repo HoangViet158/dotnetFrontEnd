@@ -1,28 +1,33 @@
-import { Card, Typography } from "antd";
+import { Card } from "antd";
+import type { CartItem } from "../../type/OrderType";
+import { useMemo } from "react";
 
-const { Text } = Typography;
+interface InvoiceInfoProps {
+  cart: CartItem[];
+}
 
-const InvoiceInfo = () => {
-  const total = 180000;
-
+const InvoiceInfo: React.FC<InvoiceInfoProps> = ({ cart }) => {
+  const total = useMemo(() => {
+    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  }, [cart]);
   return (
     <Card title="THÔNG TIN HÓA ĐƠN" size="small">
-      <div className="flex justify-between mb-1">
-        <Text>Tổng tiền hàng</Text>
-        <Text>{total.toLocaleString()} đ</Text>
+      <div className="flex justify-between">
+        <span>Tổng số lượng:</span>
+        <span>{cart.reduce((sum, i) => sum + i.quantity, 0)}</span>
       </div>
-      <div className="flex justify-between mb-1">
+      <div className="flex justify-between mt-1 font-semibold text-blue-600">
+        <span>Tổng tiền:</span>
+        <span>{total.toLocaleString()} đ</span>
+      </div>
+      {/* <div className="flex justify-between mb-1">
         <Text>Chiết khấu</Text>
         <Text>0 đ</Text>
-      </div>
-      <div className="flex justify-between font-semibold text-lg text-red-500">
-        <Text>Tổng tiền hóa đơn</Text>
-        <Text>{total.toLocaleString()} đ</Text>
-      </div>
-      <div className="flex justify-between mt-1">
+      </div> */}
+      {/* <div className="flex justify-between mt-1">
         <Text>Tiền khách trả</Text>
         <Text>0 đ</Text>
-      </div>
+      </div> */}
     </Card>
   );
 };

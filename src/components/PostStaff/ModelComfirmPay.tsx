@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Modal,
   Typography,
@@ -9,16 +9,12 @@ import {
   Button,
   Space,
 } from "antd";
+import type { CartItem, OrderResponse } from "../../type/OrderType";
+import type { ResponseApi } from "../../type/axios";
+import { updateOrderStatus } from "../../services/Order";
+import { toast } from "react-toastify";
 
 const { Title, Text } = Typography;
-
-interface ProductItem {
-  key: string;
-  name: string;
-  image: string;
-  quantity: number;
-  price: number;
-}
 
 interface CustomerInfo {
   name: string;
@@ -30,24 +26,44 @@ interface CustomerInfo {
 interface ModelConfirmPayProps {
   open: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
-  products: ProductItem[];
-  customer: CustomerInfo;
+  order: OrderResponse | null;
+  customer: CustomerInfo | null;
   createdBy: string;
   createdAt: string;
+  clearCart: () => void;
+  clearCustomerState: () => void;
 }
 
 const ModelConfirmPay: React.FC<ModelConfirmPayProps> = ({
   open,
   onCancel,
-  onConfirm,
-  products,
+  order,
   customer,
   createdBy,
   createdAt,
+  clearCart,
+  clearCustomerState,
 }) => {
-  const totalQuantity = products.reduce((sum, p) => sum + p.quantity, 0);
-  const totalPrice = products.reduce((sum, p) => sum + p.price * p.quantity, 0);
+  const totalQuantity = order?.items.reduce((sum, p) => sum + p.quantity, 0);
+  const totalAmount = order?.items.reduce((sum, p) => sum + p.price * p.quantity, 0)
+
+  const handleUpdateOrderStatus = async () => {
+    if (!order?.orderId) {
+      toast.error("Không tìm thấy ID đơn hàng!");
+      return;
+    }
+
+    try {
+      await updateOrderStatus(order.orderId);
+      toast.success("Hoàn thành đơn hàng!");
+      onCancel();
+      clearCart();
+      clearCustomerState();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Lỗi!");
+    }
+  };
 
   return (
     <Modal
@@ -80,17 +96,16 @@ const ModelConfirmPay: React.FC<ModelConfirmPayProps> = ({
 
       {/* Danh sách sản phẩm */}
       <div>
-        {products.map((item) => (
+        {order?.items.map((item) => (
           <Row
-            key={item.key}
+            key={item.productId}
             align="middle"
             style={{ padding: "8px 0", borderBottom: "1px solid #f0f0f0" }}
             gutter={16}
           >
             <Col flex="60px">
               <Image
-                src={item.image}
-                alt={item.name}
+                alt={item.productName}
                 width={50}
                 height={50}
                 style={{ objectFit: "cover", borderRadius: 4 }}
@@ -100,7 +115,7 @@ const ModelConfirmPay: React.FC<ModelConfirmPayProps> = ({
             <Col flex="auto">
               <Row justify="space-between" align="middle">
                 <Col>
-                  <Text>{item.name}</Text>
+                  <Text>{item.productName}</Text>
                   <div style={{ fontSize: 12, color: "#888" }}>
                     Số lượng: {item.quantity}
                   </div>
@@ -123,13 +138,13 @@ const ModelConfirmPay: React.FC<ModelConfirmPayProps> = ({
       </Row>
       <Row justify="space-between" style={{ marginBottom: 4 }}>
         <Text>Tổng tiền hàng:</Text>
-        <Text>{totalPrice.toLocaleString()} ₫</Text>
+        <Text>{totalAmount?.toLocaleString()} ₫</Text>
       </Row>
       <Divider style={{ margin: "8px 0" }} />
       <Row justify="space-between">
         <Text strong>Tổng thanh toán:</Text>
         <Text strong style={{ color: "#1677ff" }}>
-          {totalPrice.toLocaleString()} ₫
+          {order?.totalAmount.toLocaleString()} ₫
         </Text>
       </Row>
 
@@ -139,7 +154,7 @@ const ModelConfirmPay: React.FC<ModelConfirmPayProps> = ({
       <Row justify="end">
         <Space>
           <Button onClick={onCancel}>Hủy</Button>
-          <Button type="primary" onClick={onConfirm}>
+          <Button type="primary" onClick={handleUpdateOrderStatus}>
             Xác nhận thanh toán
           </Button>
         </Space>

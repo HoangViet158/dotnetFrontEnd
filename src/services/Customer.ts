@@ -3,7 +3,7 @@ import type { Customer } from "../type/Customer";
 import type { ResponseApi } from "../type/axios";
 
 // Lấy tất cả khách hàng, có phân trang / filter nếu backend hỗ trợ
-export const getAllCustomers = (): Promise<ResponseApi> => {
+export const getAllCustomers = (): Promise<ResponseApi<Customer[]>> => {
   return instance.get("/customer");
 };
 
