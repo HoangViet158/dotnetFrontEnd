@@ -1,19 +1,40 @@
-import { Layout, Button, Input } from "antd";
+import { Layout, Input } from "antd";
 import CartTable from "../components/PostStaff/CartTable";
 import ProductList from "../components/PostStaff/ProductList";
 import InvoiceInfo from "../components/PostStaff/InvoiceInfo";
 import CustomerSection from "../components/PostStaff/CustomerSection";
 import { useState } from "react";
+import type { CartItem } from "../type/OrderType";
 
 const { Content, Sider } = Layout;
 
+
 const PosLayout = () => {
   const [barcode, setBarcode] = useState("");
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const clearCart = () => setCart([]);
+
   const handleEnter = () => {
     if (!barcode.trim()) return;
 
     setBarcode(""); // clear sau khi quét
   };
+
+  const handleAddToCart = (product: { productId: number; productName: string; price: number }) => {
+    setCart((prev) => {
+      const exist = prev.find((p) => p.productId === product.productId);
+      if (exist) {
+        // tăng số lượng nếu đã có trong giỏ
+        return prev.map((p) =>
+          p.productId === product.productId
+            ? { ...p, quantity: p.quantity + 1 }
+            : p
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
+
   return (
     <Layout style={{ height: "100vh", overflow: "hidden" }}>
       {/* Bên trái */}
@@ -28,10 +49,7 @@ const PosLayout = () => {
         }}
       >
         <div className="flex justify-between mb-2 flex-shrink-0 gap-2">
-          <div className="flex gap-2">
-            <Button type="primary">Hóa đơn 1</Button>
-            <Button>+ Thêm hóa đơn</Button>
-          </div>
+
           <Input
             placeholder="Quét mã vạch..."
             value={barcode}
@@ -42,7 +60,7 @@ const PosLayout = () => {
         </div>
 
         <div className="flex-shrink-0">
-          <CartTable />
+          <CartTable cart={cart} setCart={setCart} />
         </div>
 
         <div
@@ -52,7 +70,7 @@ const PosLayout = () => {
             paddingRight: 4,
           }}
         >
-          <ProductList />
+          <ProductList onAddToCart={handleAddToCart} />
         </div>
       </Content>
 
@@ -66,13 +84,13 @@ const PosLayout = () => {
           flexDirection: "column",
           justifyContent: "space-between",
           height: "100vh",
-          overflow: "hidden", // ⚡ ngắt scroll bên phải
+          overflow: "hidden", // ngắt scroll bên phải
         }}
       >
         <div>
-          <InvoiceInfo />
+          <InvoiceInfo cart={cart} />
           <div className="mt-3">
-            <CustomerSection />
+            <CustomerSection cart={cart} clearCart={clearCart} />
           </div>
         </div>
       </Sider>

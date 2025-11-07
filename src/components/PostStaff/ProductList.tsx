@@ -9,97 +9,62 @@ import {
   Select,
   Space,
 } from "antd";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { SearchOutlined } from "@ant-design/icons";
+import type { ProductType } from "../../type/ProductsType";
+import { getAllProducts } from "../../services/Products";
+import type { InventoryType } from "../../type/InventoryType";
+import { getProductQuantityInInventory } from "../../services/Inventory";
 
 const { Meta } = Card;
 const { Option } = Select;
 
-const allProducts = [
-  {
-    id: 1,
-    name: "Nước ngọt Coca 1.5L",
-    price: 21000,
-    quantity: 12,
-
-    image: "https://i.imgur.com/dQaImi7.jpeg",
-  },
-  {
-    id: 2,
-    name: "Sprite 1.5L",
-    price: 22000,
-    quantity: 12,
-
-    image: "https://i.imgur.com/dQaImi7.jpeg",
-  },
-  {
-    id: 3,
-    name: "Mirinda 1.5L",
-    price: 20000,
-    quantity: 12,
-
-    image: "https://i.imgur.com/dQaImi7.jpeg",
-  },
-  {
-    id: 4,
-    name: "Aquafina 1.5L",
-    price: 17000,
-    quantity: 12,
-
-    image: "https://i.imgur.com/dQaImi7.jpeg",
-  },
-  {
-    id: 5,
-    name: "Pepsi 1.5L",
-    price: 23000,
-    quantity: 12,
-
-    image: "https://i.imgur.com/dQaImi7.jpeg",
-  },
-  {
-    id: 6,
-    name: "Lavie 500ml",
-    price: 10000,
-    quantity: 12,
-
-    image: "https://i.imgur.com/dQaImi7.jpeg",
-  },
-  {
-    id: 7,
-    name: "7Up 1.5L",
-    price: 22000,
-    quantity: 12,
-
-    image: "https://i.imgur.com/dQaImi7.jpeg",
-  },
-  {
-    id: 8,
-    name: "Fanta Cam 1.5L",
-    price: 22000,
-    quantity: 12,
-    image: "https://i.imgur.com/dQaImi7.jpeg",
-  },
-];
-
-const ProductList = () => {
+interface ProductListProps {
+  onAddToCart: (product: { productId: number; productName: string; price: number }) => void;
+}
+const ProductList: React.FC<ProductListProps> = ({ onAddToCart }) => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
   const [search, setSearch] = useState("");
   const [sortType, setSortType] = useState("default");
 
+  const [productList, setProductList] = useState<ProductType[]>([]);
+  const [productQuantity, setProductQuantity] = useState<InventoryType[]>([]);
+
+  const fetchDataProductList = async () => {
+    const res = await getProductQuantityInInventory();
+    setProductQuantity(res.data);
+
+  };
+
+  const fetchProductQuantity = async () => {
+    try {
+      const res = await getAllProducts();
+      setProductList(res.data);
+    } catch (error) {
+      console.error("Lỗi khi lấy sản phẩm:", error);
+    }
+  };
+
+
+  useEffect(() => {
+    fetchDataProductList();
+    fetchProductQuantity();
+  }, []);
+
   // Lọc theo tên
   const filtered = useMemo(() => {
-    let list = allProducts.filter((p) =>
-      p.name.toLowerCase().includes(search.toLowerCase())
+    let list = productList.filter((p) =>
+      p.productName.toLowerCase().includes(search.toLowerCase())
     );
 
     if (sortType === "asc") list = [...list].sort((a, b) => a.price - b.price);
     if (sortType === "desc") list = [...list].sort((a, b) => b.price - a.price);
     if (sortType === "name")
-      list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+      list = [...list].sort((a, b) => a.productName.localeCompare(b.productName));
 
     return list;
-  }, [search, sortType]);
+  }, [productList, search, sortType]);
 
   // Phân trang
   const start = (page - 1) * pageSize;
@@ -147,8 +112,10 @@ const ProductList = () => {
 
       {/* Grid sản phẩm */}
       <Row gutter={[12, 12]}>
-        {displayProducts.map((p) => (
-          <Col xs={12} sm={8} md={6} lg={6} key={p.id}>
+        {displayProducts.map((p) => {
+          const inventory = productQuantity.find(q => q.productId === p.productId);
+          const quantity = inventory?.quantity ?? 0;
+          return <Col xs={12} sm={8} md={6} lg={6} key={p.productId}>
             <Card
               hoverable
               size="small"
@@ -165,8 +132,8 @@ const ProductList = () => {
                   }}
                 >
                   <Image
-                    src={p.image}
-                    alt={p.name}
+                    // src={p.image}
+                    alt={p.productName}
                     preview={false}
                     style={{
                       maxWidth: "100%",
@@ -185,7 +152,7 @@ const ProductList = () => {
               <Meta
                 title={
                   <div className="text-center text-sm font-semibold line-clamp-2">
-                    {p.name}
+                    {p.productName}
                   </div>
                 }
                 description={
@@ -195,7 +162,7 @@ const ProductList = () => {
                     </div>
                     <div className="text-gray-500 text-xs mt-1">
                       Số lượng:{" "}
-                      <span className="font-medium">{p.quantity}</span>
+                      <span className="font-medium">{quantity}</span>
                     </div>
                   </div>
                 }
@@ -206,13 +173,13 @@ const ProductList = () => {
                 block
                 size="middle"
                 style={{ marginTop: 10 }}
-                onClick={() => console.log("Chọn sản phẩm:", p.name)}
+                onClick={() => onAddToCart({ productId: p.productId, productName: p.productName, price: p.price })}
               >
                 Chọn
               </Button>
             </Card>
           </Col>
-        ))}
+        })}
       </Row>
 
       {/* Phân trang */}

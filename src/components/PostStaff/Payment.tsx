@@ -1,14 +1,17 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Modal,
-  QRCode,
   Divider,
   Typography,
   Row,
   Col,
   Button,
-  Space,
+  Image,
 } from "antd";
+import type { OrderResponse } from "../../type/OrderType";
+import { toast } from "react-toastify";
+import { createPaymentUrlVnpay } from "../../services/Payment";
+import { getOrderById } from "../../services/Order";
 
 const { Title, Text } = Typography;
 
@@ -19,41 +22,79 @@ interface CustomerInfo {
   address?: string;
 }
 
-interface ProductInfo {
-  name: string;
-  quantity: number;
-  price: number;
-  total: number;
-  startDate?: string;
-}
-
 interface PaymentProps {
   open: boolean;
   onClose: () => void;
-  onConfirm: () => void;
-  paymentInfo: {
-    amount: number;
-    accountName: string;
-    bank: string;
-    accountNumber: string;
-    qrValue: string;
-  };
-  product: ProductInfo;
-  customer: CustomerInfo;
+  order: OrderResponse | null;
+  customer: CustomerInfo | null;
   createdBy: string;
   createdAt: string;
+  clearCart: () => void;
+  clearCustomerState: () => void;
 }
 
 const Payment: React.FC<PaymentProps> = ({
   open,
   onClose,
-  onConfirm,
-  paymentInfo,
-  product,
+  order,
   customer,
   createdBy,
   createdAt,
+  clearCart,
+  clearCustomerState,
 }) => {
+  const handleCreatePaymentUrlVnpay = async () => {
+    if (!order?.orderId) {
+      toast.error("Không tìm thấy ID đơn hàng!");
+      return;
+    }
+    const paymentInformation = {
+      orderId: order.orderId,
+      orderType: "topup",
+      amount: order.totalAmount,
+      orderDescription: "Thanh toán đơn hàng" + order.orderId,
+      name: customer?.name
+    };
+
+
+    try {
+      const res = await createPaymentUrlVnpay(paymentInformation);
+      const paymentUrl = res.data?.paymentUrl;
+
+      if (paymentUrl) {
+        window.open(paymentUrl, "_blank");
+        toast.info("Vui lòng hoàn tất thanh toán trong cửa sổ VNPay.");
+
+        // Bắt đầu polling trạng thái đơn hàng
+        const interval = setInterval(async () => {
+          try {
+            const orderRes = await getOrderById(order.orderId);
+            if (orderRes.data?.status === "paid") {
+              toast.success("Thanh toán thành công!");
+              clearInterval(interval);
+              onClose();
+              clearCart();
+              clearCustomerState();
+            }
+          } catch (err) {
+            console.error("Lỗi khi kiểm tra trạng thái đơn hàng:", err);
+          }
+        }, 3000);
+      } else {
+        toast.error("Không nhận được liên kết thanh toán từ server!");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Lỗi!");
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      handleCreatePaymentUrlVnpay();
+    }
+  }, [open]);
+
   return (
     <Modal
       open={open}
@@ -67,75 +108,47 @@ const Payment: React.FC<PaymentProps> = ({
         </Title>
       }
     >
-      {/* QR + Số tiền */}
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <QRCode value={paymentInfo.qrValue} size={200} bordered={false} />
-        <div
-          style={{
-            marginTop: 12,
-            fontSize: 24,
-            fontWeight: 600,
-            color: "#16a34a",
-          }}
-        >
-          {paymentInfo.amount.toLocaleString()} VNĐ
-        </div>
-        <Text type="secondary" style={{ fontStyle: "italic" }}>
-          📌 Quét mã để thanh toán nhanh chóng
-        </Text>
-      </div>
-
-      <Divider />
-
-      {/* Thông tin tài khoản ngân hàng */}
-      <div style={{ marginBottom: 16 }}>
-        <Text strong>🏦 Thông tin chuyển khoản</Text>
-        <Divider style={{ margin: "8px 0" }} />
-        <p>
-          <Text strong>Ngân hàng:</Text> {paymentInfo.bank}
-        </p>
-        <p>
-          <Text strong>Số tài khoản:</Text> {paymentInfo.accountNumber}
-        </p>
-        <p>
-          <Text strong>Chủ tài khoản:</Text> {paymentInfo.accountName}
-        </p>
-      </div>
-
       {/* Thông tin sản phẩm */}
-      <div style={{ marginBottom: 16 }}>
-        <Text strong>🧾 Thông tin sản phẩm</Text>
+      <div>
         <Divider style={{ margin: "8px 0" }} />
-        <Row>
-          <Col span={12}>
-            <p>
-              <Text strong>Tên:</Text> {product.name}
-            </p>
-            {product.startDate && (
-              <p>
-                <Text strong>Ngày khởi hành:</Text> {product.startDate}
-              </p>
-            )}
-            <p>
-              <Text strong>Số lượng:</Text> {product.quantity}
-            </p>
-          </Col>
-          <Col span={12}>
-            <p>
-              <Text strong>Giá:</Text> {product.price.toLocaleString()} VNĐ
-            </p>
-            <p>
-              <Text strong>Tổng tiền:</Text> {product.total.toLocaleString()}{" "}
-              VNĐ
-            </p>
-          </Col>
-        </Row>
+        <Text strong>📦 Thông tin đơn hàng</Text>
+        {order?.items.map((item) => (
+          <Row
+            key={item.productId}
+            align="middle"
+            style={{ padding: "8px 0", borderBottom: "1px solid #f0f0f0" }}
+            gutter={16}
+          >
+            <Col flex="60px">
+              <Image
+                alt={item.productName}
+                width={50}
+                height={50}
+                style={{ objectFit: "cover", borderRadius: 4 }}
+                preview={false}
+              />
+            </Col>
+            <Col flex="auto">
+              <Row justify="space-between" align="middle">
+                <Col>
+                  <Text>{item.productName}</Text>
+                  <div style={{ fontSize: 12, color: "#888" }}>
+                    Số lượng: {item.quantity}
+                  </div>
+                </Col>
+                <Col>
+                  <Text>{(item.price * item.quantity).toLocaleString()} ₫</Text>
+                </Col>
+              </Row>
+            </Col>
+          </Row>
+        ))}
       </div>
 
       {/* Thông tin khách hàng */}
       <div style={{ marginBottom: 16 }}>
+
         <Text strong>👤 Thông tin khách hàng</Text>
-        <Divider style={{ margin: "8px 0" }} />
         <p>
           <Text strong>Họ tên:</Text> {customer?.name}
         </p>
@@ -156,8 +169,9 @@ const Payment: React.FC<PaymentProps> = ({
 
       {/* Thông tin người tạo đơn */}
       <div>
-        <Text strong>📦 Thông tin đơn hàng</Text>
         <Divider style={{ margin: "8px 0" }} />
+
+        <Text strong>📦 Thông tin người tạo đơn</Text>
         <p>
           <Text strong>Người tạo:</Text> {createdBy}
         </p>
@@ -168,12 +182,7 @@ const Payment: React.FC<PaymentProps> = ({
 
       {/* Nút hành động */}
       <div style={{ marginTop: 20, textAlign: "right" }}>
-        <Space>
           <Button onClick={onClose}>Hủy</Button>
-          <Button type="primary" onClick={onConfirm}>
-            Xác nhận đã chuyển
-          </Button>
-        </Space>
       </div>
     </Modal>
   );

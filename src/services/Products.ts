@@ -1,7 +1,8 @@
 import instance from "../API/AxiosClient";
+import type { ResponseApi } from "../type/axios";
 import type { ProductType } from "../type/ProductsType";
 // Lấy tất cả sản phẩm, có phân trang và filter theo tên
-export const getAllProducts = () => {
+export const getAllProducts = () : Promise<ResponseApi<ProductType[]>> => {
   return instance.get("/product");
 };
 
