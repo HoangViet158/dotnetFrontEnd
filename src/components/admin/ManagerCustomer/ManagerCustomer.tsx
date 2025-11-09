@@ -16,29 +16,20 @@ import {
   getAllCustomers,
 } from "../../../services/Customer";
 import { toast } from "react-toastify";
-import { Customer } from "../../../type/Customer";
-
-interface User {
-  customerId: number;
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
-  createdAt: string;
-}
+import type { Customer } from "../../../type/Customer";
 
 const ManagerCustomer: React.FC = () => {
   // const tableRef = useRef<User>(null);
 
-  const [data, setData] = useState<User[]>([]);
-  const [filteredData, setFilteredData] = useState<User[]>([]);
+  const [data, setData] = useState<Customer[]>([]);
+  const [filteredData, setFilteredData] = useState<Customer[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(5);
 
   const [openModalAdd, setOpenModalAdd] = useState(false);
   const [openModalEdit, setOpenModalEdit] = useState(false);
-  const [editData, setEditData] = useState<User | null>(null);
+  const [editData, setEditData] = useState<Customer | null>(null);
 
   const [searchName, setSearchName] = useState<string>("");
   const handleRefresh = async () => {
@@ -57,9 +48,9 @@ const ManagerCustomer: React.FC = () => {
   const fetchCustomer = async () => {
     const res = await getAllCustomers();
     console.log(res);
-    setData(res);
-    setFilteredData(res);
-    setTotal(res.length);
+    setData(res.data);
+    setFilteredData(res.data);
+    // setTotal(res.data.);
   };
   useEffect(() => {
     fetchCustomer();
@@ -112,7 +103,7 @@ const ManagerCustomer: React.FC = () => {
       title: "Thao tác",
       key: "actions",
       width: 120,
-      render: (_: User, record: User) => (
+      render: (_: Customer, record: Customer) => (
         <Space>
           <EditOutlined
             style={{ color: "#1890ff", fontSize: 18, cursor: "pointer" }}
@@ -175,8 +166,8 @@ const ManagerCustomer: React.FC = () => {
       </div>
 
       {/* Table */}
-      <ProTable<User>
-        columns={columns as ProColumns<User, "text">[]}
+      <ProTable<Customer>
+        columns={columns as ProColumns<Customer, "text">[]}
         dataSource={filteredData}
         rowKey="user_id"
         search={false}

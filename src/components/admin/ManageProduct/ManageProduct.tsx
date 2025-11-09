@@ -18,37 +18,16 @@ import {
 import { getAllCategories } from "../../../services/Category";
 import { getAllSuppliers } from "../../../services/Suppliers";
 import type { ProductType } from "../../../type/ProductsType";
-interface Product {
-  productId: number;
-  category: Category;
-  supplier: Supplier;
-  productName: string;
-  barcode: string;
-  price: number;
-  // category: string;
-  unit: string;
-  createdAt: string;
-}
-interface Category {
-  categoryId: number;
-  categoryName: string;
-}
-
-interface Supplier {
-  supplierId: number;
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
-}
+import type { CategoryType } from "../../../type/CategoryType";
+import type { SupplierType } from "../../../type/SuppliersType";
 
 const ManagerProduct: React.FC = () => {
   const tableRef = useRef<any>(null);
 
-  const [data, setData] = useState<Product[]>([]);
-  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
-  const [suppliersList, setSuppliersList] = useState<Supplier[]>([]);
-  const [filteredData, setFilteredData] = useState<Product[]>([]);
+  const [data, setData] = useState<ProductType[]>([]);
+  const [categoriesList, setCategoriesList] = useState<CategoryType[]>([]);
+  const [suppliersList, setSuppliersList] = useState<SupplierType[]>([]);
+  const [filteredData, setFilteredData] = useState<ProductType[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(5);
@@ -63,7 +42,7 @@ const ManagerProduct: React.FC = () => {
 
   const fetchProducts = async () => {
     const res = await getAllProducts();
-    const products = res;
+    const products = res.data;
     console.log("Fetched products:", products);
     setData(products);
     setFilteredData(products);
@@ -72,13 +51,13 @@ const ManagerProduct: React.FC = () => {
   const fetchCategories = async () => {
     const res = await getAllCategories();
     console.log(res);
-    setCategoriesList(res);
+    setCategoriesList(res.data);
     // console.log("Fetched categories:", res.data);
   };
 
   const fetchSuppliers = async () => {
     const res = await getAllSuppliers();
-    setSuppliersList(res);
+    setSuppliersList(res.data);
   };
   useEffect(() => {
     fetchProducts();
@@ -100,10 +79,10 @@ const ManagerProduct: React.FC = () => {
         ? u.productName.toLowerCase().includes(searchName.toLowerCase())
         : true;
       const matchCatogory = searchCatogory
-        ? u.category.categoryId === searchCatogory
+        ? u.categoryId === searchCatogory
         : true;
       const matchSupplier = searchSupplier
-        ? u.supplier.supplierId === searchSupplier
+        ? u.supplierId === searchSupplier
         : true;
       return matchName && matchCatogory && matchSupplier;
     });
@@ -160,13 +139,13 @@ const ManagerProduct: React.FC = () => {
       title: "Danh mục",
       dataIndex: "category",
       key: "category",
-      render: (val: Category) => val.categoryName,
+      render: (val: CategoryType) => val.category_name,
     },
     {
       title: "Nhà cung cấp",
       dataIndex: "supplier",
       key: "supplier",
-      render: (val: Supplier) => val.name,
+      render: (val: SupplierType) => val.name,
     },
     {
       title: "Giá",
@@ -240,18 +219,18 @@ const ManagerProduct: React.FC = () => {
           style={{ width: 200 }}
           allowClear
         />
-        <Select
+        {/* <Select
           placeholder="Chọn danh mục"
           value={searchCatogory}
           onChange={(val) => setsearchCatogory(val)}
           allowClear
           style={{ width: 180 }}
           options={categoriesList.map((cat) => ({
-            label: cat.categoryName,
-            value: cat.categoryId,
-          }))}
-        />
-        <Select
+            label: cat.category_name,
+            value: cat.category_id,
+          }))} */}
+        {/* /> */}
+        {/* <Select
           placeholder="Chọn nhà cung cấp"
           value={searchSupplier}
           onChange={(val) => setsearchSupplier(val)}
@@ -259,17 +238,17 @@ const ManagerProduct: React.FC = () => {
           style={{ width: 180 }}
           options={suppliersList.map((sup) => ({
             label: sup.name,
-            value: sup.supplierId,
-          }))}
-        />
+            value: sup.supplier_id,
+          }))} */}
+        {/* /> */}
         <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
           Tìm kiếm
         </Button>
       </div>
 
       {/* Table */}
-      <ProTable<Product>
-        columns={columns as ProColumns<Product, "text">[]}
+      <ProTable<ProductType>
+        columns={columns as ProColumns<ProductType, "text">[]}
         dataSource={filteredData}
         rowKey="product_id"
         request={async () => {
@@ -290,7 +269,7 @@ const ManagerProduct: React.FC = () => {
             setPageSize(size);
           },
         }}
-        headerTitle="Danh sách người dùng"
+        headerTitle="Danh sách sản phẩm"
         toolBarRender={() => [
           <Button
             key="create"
@@ -307,8 +286,8 @@ const ManagerProduct: React.FC = () => {
         open={openModalEdit}
         setOpen={setOpenModalEdit}
         data={editData}
-        listCategories={categoriesList}
-        listSuppliers={suppliersList}
+        // listCategories={categoriesList}
+        // listSuppliers={suppliersList}
         fetchProducts={fetchProducts}
       />
 
@@ -316,8 +295,8 @@ const ManagerProduct: React.FC = () => {
         open={openModalAdd}
         setOpen={setOpenModalAdd}
         onSubmit={handleAddProduct}
-        listCategories={categoriesList}
-        listSuppliers={suppliersList}
+        // listCategories={categoriesList}
+        // listSuppliers={suppliersList}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button, Input, Space, Tag } from "antd";
+import { Button, Input, Space, Tag, message } from "antd";
 import { ProTable, type ProColumns } from "@ant-design/pro-components";
 import {
   EditOutlined,
@@ -11,78 +11,100 @@ import dayjs from "dayjs";
 import ModalUpdateQuantity from "./ModalUpdateQuantity";
 import ModalInventoryLog from "./ModalInventoryLog";
 
-interface Product {
-  inventory_id: number;
-  product_id: number;
-  product_name: string;
-  category: string;
-  supplier: string;
-  quantity: number;
-  minimum_quantity: number;
-  updated_at: string;
-}
+import type { InventoryType, InventoryDisplayType } from "../../../type/InventoryType";
+import type { ProductType } from "../../../type/ProductsType";
+import type { SupplierType } from "../../../type/SuppliersType";
+import type { CategoryType } from "../../../type/CategoryType";
+
+import { getAllInventories } from "../../../services/Inventory";
+import { getAllProducts } from "../../../services/Products";
+import { getAllSuppliers } from "../../../services/Suppliers";
+import { getAllCategories } from "../../../services/Category";
 
 const ManagerInventory: React.FC = () => {
-  const [data, setData] = useState<Product[]>([]);
-  const [filteredData, setFilteredData] = useState<Product[]>([]);
+  const [data, setData] = useState<InventoryDisplayType[]>([]);
+  const [filteredData, setFilteredData] = useState<InventoryDisplayType[]>([]);
   const [openModalUpdate, setOpenModalUpdate] = useState(false);
   const [openModalLog, setOpenModalLog] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<Product | null>(null);
+  const [selectedItem, setSelectedItem] = useState<InventoryDisplayType | null>(null);
+
   const [searchName, setSearchName] = useState("");
   const [searchCategory, setSearchCategory] = useState("");
   const [searchSupplier, setSearchSupplier] = useState("");
 
+  // ==============================
+  // FETCH DATA
+  // ==============================
+  const fetchInventories = async () => {
+    try {
+      const [resInventories, resProducts, resSuppliers, resCategories] = await Promise.all([
+        getAllInventories(),
+        getAllProducts(),
+        getAllSuppliers(),
+        getAllCategories(),
+      ]);
+
+      const inventories: InventoryType[] = resInventories?.data || [];
+      const products: ProductType[] = resProducts?.data || [];
+      const suppliers: SupplierType[] = resSuppliers?.data || [];
+      const categories: CategoryType[] = resCategories?.data || [];
+
+      // 🔹 Map dữ liệu hiển thị
+      const mapped: InventoryDisplayType[] = inventories.map((inv) => {
+        const product = products.find((p) => p.productId === inv.productId);
+        const category = categories.find((c) => c.category_id === product?.categoryId);
+        const supplier = suppliers.find((s) => s.supplier_id === product?.supplierId);
+
+        return {
+          inventoryId: inv.inventoryId,
+          productId: inv.productId,
+          quantity: inv.quantity,
+          updatedAt: inv.updatedAt,
+          categoryId: product?.categoryId ?? 0,
+          supplierId: product?.supplierId ?? 0,
+          productName: product?.productName ?? "Không xác định",
+          categoryName: category?.category_name ?? "Không xác định",
+          supplierName: supplier?.name ?? "Không xác định",
+        };
+      });
+
+      console.log(mapped)
+      setData(mapped);
+      setFilteredData(mapped);
+    } catch (error) {
+      console.error("Error fetching inventories:", error);
+      message.error("Không thể lấy danh sách tồn kho");
+    }
+  };
+
   useEffect(() => {
-    // Giả lập dữ liệu tồn kho
-    const mock: Product[] = [
-      {
-        inventory_id: 1,
-        product_id: 101,
-        product_name: "Áo Thun Nam Basic",
-        category: "Áo thun",
-        supplier: "Nhà cung cấp A",
-        quantity: 8,
-        minimum_quantity: 10,
-        updated_at: "2025-10-08",
-      },
-      {
-        inventory_id: 2,
-        product_id: 102,
-        product_name: "Quần Jean Nữ",
-        category: "Quần jean",
-        supplier: "Nhà cung cấp B",
-        quantity: 20,
-        minimum_quantity: 5,
-        updated_at: "2025-10-07",
-      },
-    ];
-    setData(mock);
-    setFilteredData(mock);
+    fetchInventories();
   }, []);
 
   // ==============================
   // SEARCH
   // ==============================
   const handleSearch = () => {
-    const filtered = data.filter((p) => {
+    const filtered = data.filter((item) => {
       const matchName = searchName
-        ? p.product_name.toLowerCase().includes(searchName.toLowerCase())
+        ? item.productName.toLowerCase().includes(searchName.toLowerCase())
         : true;
       const matchCategory = searchCategory
-        ? p.category.toLowerCase().includes(searchCategory.toLowerCase())
+        ? item.categoryName.toLowerCase().includes(searchCategory.toLowerCase())
         : true;
       const matchSupplier = searchSupplier
-        ? p.supplier.toLowerCase().includes(searchSupplier.toLowerCase())
+        ? item.supplierName.toLowerCase().includes(searchSupplier.toLowerCase())
         : true;
+
       return matchName && matchCategory && matchSupplier;
     });
     setFilteredData(filtered);
   };
 
   // ==============================
-  // COLUMNS
+  // TABLE COLUMNS
   // ==============================
-  const columns: ProColumns<Product>[] = [
+  const columns: ProColumns<InventoryDisplayType>[] = [
     {
       title: "STT",
       key: "index",
@@ -92,25 +114,25 @@ const ManagerInventory: React.FC = () => {
     },
     {
       title: "Tên sản phẩm",
-      dataIndex: "product_name",
+      dataIndex: "productName",
       key: "product_name",
     },
     {
       title: "Loại sản phẩm",
-      dataIndex: "category",
-      key: "category",
+      dataIndex: "categoryName",
+      key: "category_name",
     },
     {
       title: "Nhà cung cấp",
-      dataIndex: "supplier",
-      key: "supplier",
+      dataIndex: "supplierName",
+      key: "supplier_name",
     },
     {
       title: "Số lượng tồn",
       dataIndex: "quantity",
       key: "quantity",
       render: (_, record) => {
-        const isLow = record.quantity <= record.minimum_quantity;
+        const isLow = record.quantity <= 10;
         return (
           <span style={{ color: isLow ? "#ff4d4f" : "inherit" }}>
             {record.quantity}{" "}
@@ -125,9 +147,10 @@ const ManagerInventory: React.FC = () => {
     },
     {
       title: "Ngày cập nhật",
-      dataIndex: "updated_at",
-      key: "updated_at",
-      render: (val: string) => dayjs(val).format("DD/MM/YYYY"),
+      dataIndex: "updatedAt",
+      key: "updatedAt",
+      render: (val?: string | Date) =>
+        val ? dayjs(val).format("DD/MM/YYYY HH:mm") : "--",
     },
     {
       title: "Thao tác",
@@ -163,7 +186,7 @@ const ManagerInventory: React.FC = () => {
   // ==============================
   return (
     <div>
-      {/* Search bar */}
+      {/* 🔎 Thanh tìm kiếm */}
       <div
         style={{
           display: "flex",
@@ -199,21 +222,17 @@ const ManagerInventory: React.FC = () => {
         </Button>
       </div>
 
-      <ProTable<Product>
+      {/* 📋 Bảng quản lý tồn kho */}
+      <ProTable<InventoryDisplayType>
         columns={columns}
         dataSource={filteredData}
-        rowKey="inventory_id"
+        rowKey="inventoryId"
         search={false}
-        pagination={{ pageSize: 5 }}
+        pagination={{ pageSize: 10 }}
         headerTitle="Quản lý tồn kho"
-        // toolBarRender={() => [
-        //   <Button key="create" type="primary" icon={<PlusOutlined />}>
-        //     Thêm sản phẩm
-        //   </Button>,
-        // ]}
       />
 
-      {/* Modal cập nhật nhập / bán hàng */}
+      {/* Modal cập nhật nhập hàng */}
       <ModalUpdateQuantity
         open={openModalUpdate}
         setOpen={setOpenModalUpdate}

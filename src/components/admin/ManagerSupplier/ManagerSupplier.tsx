@@ -11,20 +11,20 @@ import { ProTable, type ProColumns } from "@ant-design/pro-components";
 import ModalAddSupplier from "./ModalAddNew";
 import ModalEditSupplier from "./ModalEdit";
 import { getAllSuppliers, deleteSupplier } from "../../../services/Suppliers";
-import type { Supplier } from "../../../type/SuppliersType";
+import type { SupplierType } from "../../../type/SuppliersType";
 
 const ManagerSupplier: React.FC = () => {
   const tableRef = useRef<any>(null);
 
-  const [data, setData] = useState<Supplier[]>([]);
-  const [filteredData, setFilteredData] = useState<Supplier[]>([]);
+  const [data, setData] = useState<SupplierType[]>([]);
+  const [filteredData, setFilteredData] = useState<SupplierType[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(5);
 
   const [openModalAdd, setOpenModalAdd] = useState(false);
   const [openModalEdit, setOpenModalEdit] = useState(false);
-  const [editData, setEditData] = useState<Supplier | null>(null);
+  const [editData, setEditData] = useState<SupplierType | null>(null);
 
   const [searchName, setSearchName] = useState<string>("");
 
@@ -34,7 +34,8 @@ const ManagerSupplier: React.FC = () => {
   const fetchSuppliers = async () => {
     try {
       const res = await getAllSuppliers();
-      const suppliers: Supplier[] = res.data; // giả sử API trả về data ở res.data
+      console.log(res)
+      const suppliers = res.data;
       setData(suppliers);
       setFilteredData(suppliers);
       setTotal(suppliers.length);
@@ -88,7 +89,7 @@ const ManagerSupplier: React.FC = () => {
   // ==============================
   // TABLE COLUMNS
   // ==============================
-  const columns: ProColumns<Supplier>[] = [
+  const columns: ProColumns<SupplierType>[] = [
     {
       title: "STT",
       key: "index",
@@ -124,7 +125,7 @@ const ManagerSupplier: React.FC = () => {
       title: "Thao tác",
       key: "actions",
       width: 120,
-      render: (_: any, record: Supplier) => (
+      render: (_: any, record: SupplierType) => (
         <Space>
           <EditOutlined
             style={{ color: "#1890ff", fontSize: 18, cursor: "pointer" }}
@@ -137,7 +138,7 @@ const ManagerSupplier: React.FC = () => {
             title="Bạn có chắc muốn xóa nhà cung cấp này?"
             okText="Xóa"
             cancelText="Hủy"
-            onConfirm={() => handleDelete(record.supplierId)}
+            onConfirm={() => handleDelete(Number(record.supplier_id))}
           >
             <DeleteOutlined
               style={{ color: "#ff4d4f", fontSize: 18, cursor: "pointer" }}
@@ -177,7 +178,7 @@ const ManagerSupplier: React.FC = () => {
       </div>
 
       {/* Table */}
-      <ProTable<Supplier>
+      <ProTable<SupplierType>
         columns={columns}
         dataSource={filteredData}
         rowKey="supplier_id"
