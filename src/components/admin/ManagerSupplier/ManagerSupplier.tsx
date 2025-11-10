@@ -138,7 +138,7 @@ const ManagerSupplier: React.FC = () => {
             title="Bạn có chắc muốn xóa nhà cung cấp này?"
             okText="Xóa"
             cancelText="Hủy"
-            onConfirm={() => handleDelete(Number(record.supplier_id))}
+            onConfirm={() => handleDelete(Number(record.supplierId))}
           >
             <DeleteOutlined
               style={{ color: "#ff4d4f", fontSize: 18, cursor: "pointer" }}

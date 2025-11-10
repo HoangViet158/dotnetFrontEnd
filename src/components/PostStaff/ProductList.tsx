@@ -24,7 +24,7 @@ interface ProductListProps {
 }
 const ProductList: React.FC<ProductListProps> = ({ onAddToCart }) => {
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(8);
+  const [pageSize, setPageSize] = useState(100);
   const [search, setSearch] = useState("");
   const [sortType, setSortType] = useState("default");
 
@@ -34,6 +34,7 @@ const ProductList: React.FC<ProductListProps> = ({ onAddToCart }) => {
   const fetchDataProductList = async () => {
     const res = await getProductQuantityInInventory();
     setProductQuantity(res.data);
+    // console.log(res)
 
   };
 
@@ -45,7 +46,6 @@ const ProductList: React.FC<ProductListProps> = ({ onAddToCart }) => {
       console.error("Lỗi khi lấy sản phẩm:", error);
     }
   };
-
 
   useEffect(() => {
     fetchDataProductList();

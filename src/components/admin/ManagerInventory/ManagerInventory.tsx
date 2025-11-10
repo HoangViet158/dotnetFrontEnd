@@ -50,25 +50,26 @@ const ManagerInventory: React.FC = () => {
       const categories: CategoryType[] = resCategories?.data || [];
 
       // 🔹 Map dữ liệu hiển thị
-      const mapped: InventoryDisplayType[] = inventories.map((inv) => {
-        const product = products.find((p) => p.productId === inv.productId);
-        const category = categories.find((c) => c.category_id === product?.categoryId);
-        const supplier = suppliers.find((s) => s.supplier_id === product?.supplierId);
+      const mapped: any = products.map((product) => {
+        const inventory = inventories.find((i) => i.productId === product.productId);
+        const category = categories.find((c) => c.categoryId === product?.categoryId);
+        const supplier = suppliers.find((s) => s.supplierId === product?.supplierId);
 
         return {
-          inventoryId: inv.inventoryId,
-          productId: inv.productId,
-          quantity: inv.quantity,
-          updatedAt: inv.updatedAt,
+          inventoryId: inventory?.inventoryId,
+          productId: product?.productId,
+          quantity: inventory?.quantity,
+          updatedAt: inventory?.updatedAt,
           categoryId: product?.categoryId ?? 0,
           supplierId: product?.supplierId ?? 0,
           productName: product?.productName ?? "Không xác định",
-          categoryName: category?.category_name ?? "Không xác định",
+          categoryName: category?.categoryName ?? "Không xác định",
           supplierName: supplier?.name ?? "Không xác định",
         };
       });
 
       console.log(mapped)
+
       setData(mapped);
       setFilteredData(mapped);
     } catch (error) {
@@ -104,7 +105,7 @@ const ManagerInventory: React.FC = () => {
   // ==============================
   // TABLE COLUMNS
   // ==============================
-  const columns: ProColumns<InventoryDisplayType>[] = [
+  const columns: ProColumns<any>[] = [
     {
       title: "STT",
       key: "index",
@@ -149,7 +150,7 @@ const ManagerInventory: React.FC = () => {
       title: "Ngày cập nhật",
       dataIndex: "updatedAt",
       key: "updatedAt",
-      render: (val?: string | Date) =>
+      render: (val?: string | any) =>
         val ? dayjs(val).format("DD/MM/YYYY HH:mm") : "--",
     },
     {

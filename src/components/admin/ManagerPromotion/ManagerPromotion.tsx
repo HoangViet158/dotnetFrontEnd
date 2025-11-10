@@ -49,9 +49,9 @@ const ManagerPromotion: React.FC = () => {
 
   const fetchPromotion = async () => {
     const res = await getAllPromotions();
-    setData(res);
-    setFilteredData(res);
-    setTotal(res.length);
+    setData(res.data);
+    setFilteredData(res.data);
+    // setTotal(res);
   };
 
   useEffect(() => {
@@ -100,26 +100,26 @@ const ManagerPromotion: React.FC = () => {
       dataIndex: "discountType",
       width: 100,
       render: (_, record) =>
-        record.discountType === "percent" ? "% phần trăm" : "Tiền mặt",
+        record.discountType === "percent" ? "%" : "Tiền mặt",
     },
     { title: "Giá trị", dataIndex: "discountValue", width: 100 },
     {
       title: "Ngày bắt đầu",
       dataIndex: "startDate",
-      width: 150,
+      width: 100,
       render: (val) => dayjs(val).format("DD/MM/YYYY"),
     },
     {
       title: "Ngày kết thúc",
       dataIndex: "endDate",
-      width: 150,
+      width: 100,
       render: (val) => dayjs(val).format("DD/MM/YYYY"),
     },
     {
       title: "Đơn tối thiểu",
       dataIndex: "minOrderAmount",
       width: 120,
-      render: (_) => <b>{_} ₫</b>,
+      render: (value) => <b>{value} ₫</b>,
     },
     { title: "Giới hạn", dataIndex: "usageLimit", width: 100 },
     { title: "Đã dùng", dataIndex: "usedCount", width: 80 },

@@ -25,8 +25,11 @@ const ManagerProduct: React.FC = () => {
   const tableRef = useRef<any>(null);
 
   const [data, setData] = useState<ProductType[]>([]);
-  const [categoriesList, setCategoriesList] = useState<CategoryType[]>([]);
-  const [suppliersList, setSuppliersList] = useState<SupplierType[]>([]);
+
+  const [products, setProducts] = useState<ProductType[]>([]);
+  const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [suppliers, setSuppliers] = useState<SupplierType[]>([]);
+
   const [filteredData, setFilteredData] = useState<ProductType[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -40,33 +43,52 @@ const ManagerProduct: React.FC = () => {
   const [searchCatogory, setsearchCatogory] = useState<number | "">("");
   const [searchSupplier, setsearchSupplier] = useState<number | "">("");
 
-  const fetchProducts = async () => {
-    const res = await getAllProducts();
-    const products = res.data;
-    console.log("Fetched products:", products);
-    setData(products);
-    setFilteredData(products);
-    setTotal(products.length);
-  };
-  const fetchCategories = async () => {
-    const res = await getAllCategories();
-    console.log(res);
-    setCategoriesList(res.data);
-    // console.log("Fetched categories:", res.data);
+  const fetchData = async () => {
+    try {
+      const [resProducts, resCatogories, resSuppliers] = await Promise.all([
+        getAllProducts(),
+        getAllCategories(),
+        getAllSuppliers(),
+      ]);
+
+      const products: ProductType[] = resProducts?.data || [];
+      const categories: CategoryType[] = resCatogories?.data || [];
+      const suppliers: SupplierType[] = resSuppliers?.data || [];
+
+      // 🔹 Map dữ liệu hiển thị
+      const mapped: any = products.map((product: ProductType) => {
+        const category = categories.find((category: CategoryType) => category.categoryId === product?.categoryId);
+        const supplier = suppliers.find((supplier: SupplierType) => supplier.supplierId === product?.supplierId);
+
+        return {
+          productId: product?.productId,
+          productName: product?.productName,
+          barCode: product?.barcode,
+          categoryName: category?.categoryName,
+          supplierName: supplier?.name,
+          price: product?.price,
+          unit: product?.unit,
+          createdDate: product?.createdAt,
+        };
+      });
+
+      console.log(mapped)
+      setData(mapped)
+      setFilteredData(mapped)
+
+    } catch (error) {
+      message.error("Lỗi tải dữ liệu!");
+      console.error(error);
+    }
   };
 
-  const fetchSuppliers = async () => {
-    const res = await getAllSuppliers();
-    setSuppliersList(res.data);
-  };
+
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-    fetchSuppliers();
+    fetchData()
   }, []);
 
   const handleRefresh = () => {
-    fetchProducts();
+    fetchData();
     setsearchCatogory("");
     setSearchName("");
     setsearchSupplier("");
@@ -94,7 +116,7 @@ const ManagerProduct: React.FC = () => {
       const res = await createNewProduct(data);
       console.log("Added product:", res.data);
       message.success("Thêm sản phẩm mới thành công!");
-      fetchProducts();
+      fetchData();
     } catch (error) {
       message.error("Thêm sản phẩm thất bại!");
       console.error("Error adding product:", error);
@@ -106,7 +128,7 @@ const ManagerProduct: React.FC = () => {
     try {
       await deleteProduct(id);
       message.success("Xóa sản phẩm thành công!");
-      fetchProducts();
+      fetchData();
     } catch (error) {
       message.error("Xóa sản phẩm thất bại!");
       console.error("Error deleting product:", error);
@@ -132,20 +154,18 @@ const ManagerProduct: React.FC = () => {
     },
     {
       title: "Mã vạch",
-      dataIndex: "barcode",
-      key: "barcode",
+      dataIndex: "barCode",
+      key: "barCode",
     },
     {
       title: "Danh mục",
-      dataIndex: "category",
-      key: "category",
-      render: (val: CategoryType) => val.category_name,
+      dataIndex: "categoryName",
+      key: "categoryName",
     },
     {
       title: "Nhà cung cấp",
-      dataIndex: "supplier",
-      key: "supplier",
-      render: (val: SupplierType) => val.name,
+      dataIndex: "supplierName",
+      key: "supplierName",
     },
     {
       title: "Giá",
@@ -164,9 +184,10 @@ const ManagerProduct: React.FC = () => {
     },
     {
       title: "Ngày tạo",
-      dataIndex: "createdAt",
-      key: "createdAt",
-      render: (val: string) => dayjs(val).format("DD/MM/YYYY"),
+      dataIndex: "createdDate",
+      key: "createdDate",
+      render: (val?: string | any) =>
+        val ? dayjs(val).format("DD/MM/YYYY HH:mm") : "--",
     },
     {
       title: "Thao tác",
@@ -288,15 +309,15 @@ const ManagerProduct: React.FC = () => {
         data={editData}
         // listCategories={categoriesList}
         // listSuppliers={suppliersList}
-        fetchProducts={fetchProducts}
+        fetchProducts={fetchData}
       />
 
       <ModalAddNew
         open={openModalAdd}
         setOpen={setOpenModalAdd}
         onSubmit={handleAddProduct}
-        // listCategories={categoriesList}
-        // listSuppliers={suppliersList}
+      // listCategories={categoriesList}
+      // listSuppliers={suppliersList}
       />
     </div>
   );
