@@ -1,12 +1,12 @@
 import React, { useEffect } from "react";
 import { Modal, Form, Input, message, Select } from "antd";
 import { updateSupplier } from "../../../services/Suppliers";
-import type { Supplier } from "../../../type/SuppliersType";
+import type { SupplierType } from "../../../type/SuppliersType";
 
 interface Props {
   open: boolean;
   setOpen: (v: boolean) => void;
-  data: Supplier | null;
+  data: SupplierType | null;
   onSuccess?: () => void; // callback sau khi update thành công
 }
 
@@ -29,10 +29,10 @@ const ModalEditSupplier: React.FC<Props> = ({
 
   const handleOk = async () => {
     try {
-      const values: Supplier = await form.validateFields();
+      const values: SupplierType = await form.validateFields();
       if (!data) return;
 
-      await updateSupplier(data.supplierId, values); // gọi API update
+      await updateSupplier(Number(data.supplier_id), values); // gọi API update
       message.success("Cập nhật nhà cung cấp thành công");
       setOpen(false);
       if (onSuccess) onSuccess(); // reload danh sách
