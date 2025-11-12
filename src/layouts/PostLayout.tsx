@@ -3,20 +3,34 @@ import CartTable from "../components/PostStaff/CartTable";
 import ProductList from "../components/PostStaff/ProductList";
 import InvoiceInfo from "../components/PostStaff/InvoiceInfo";
 import CustomerSection from "../components/PostStaff/CustomerSection";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CartItem } from "../type/OrderType";
+import type { InventoryType } from "../type/InventoryType";
+import { getProductQuantityInInventory } from "../services/Inventory";
+import type { Promotion } from "../type/Promotion";
 
 const { Content, Sider } = Layout;
-
 
 const PosLayout = () => {
   const [barcode, setBarcode] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const clearCart = () => setCart([]);
+  const [productQuantity, setProductQuantity] = useState<InventoryType[]>([]);
+  const [selectedPromo, setSelectedPromo] = useState<Promotion | null>(null);
+
+
+  const fetchProductQuantity = async () => {
+    const res = await getProductQuantityInInventory();
+    if (res.success && res.data) {
+      setProductQuantity(res.data);
+    } else {
+      console.error("Lỗi khi fetch product quantity:", res.message, res.errors);
+    }
+  
+  };
 
   const handleEnter = () => {
     if (!barcode.trim()) return;
-
     setBarcode(""); // clear sau khi quét
   };
 
@@ -24,7 +38,6 @@ const PosLayout = () => {
     setCart((prev) => {
       const exist = prev.find((p) => p.productId === product.productId);
       if (exist) {
-        // tăng số lượng nếu đã có trong giỏ
         return prev.map((p) =>
           p.productId === product.productId
             ? { ...p, quantity: p.quantity + 1 }
@@ -35,42 +48,55 @@ const PosLayout = () => {
     });
   };
 
+  useEffect(() => {
+    fetchProductQuantity();
+  }, []);
+
   return (
     <Layout style={{ height: "100vh", overflow: "hidden" }}>
-      {/* Bên trái */}
       <Content
         style={{
           padding: "10px",
           background: "#fff",
           display: "flex",
-          flexDirection: "column",
+          flexDirection: "row",
           height: "100%",
-          overflow: "hidden", // chặn tràn
+          overflow: "hidden",
+          gap: "10px",
         }}
       >
-        <div className="flex justify-between mb-2 flex-shrink-0 gap-2">
-
-          <Input
-            placeholder="Quét mã vạch..."
-            value={barcode}
-            onChange={(e) => setBarcode(e.target.value)}
-            onPressEnter={handleEnter}
-            style={{ width: 250 }}
-          />
-        </div>
-
-        <div className="flex-shrink-0">
-          <CartTable cart={cart} setCart={setCart} />
-        </div>
-
+        {/* Bên trái - danh sách sản phẩm */}
         <div
           style={{
-            flex: 1,
+            flex: 2,
             overflowY: "auto",
             paddingRight: 4,
+            borderRight: "1px solid #eee",
           }}
         >
-          <ProductList onAddToCart={handleAddToCart} />
+          <div className="flex justify-between mb-2 flex-shrink-0 gap-2">
+            <Input
+              placeholder="Quét mã vạch..."
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value)}
+              onPressEnter={handleEnter}
+              style={{ width: 250 }}
+            />
+          </div>
+
+          <ProductList productQuantity={productQuantity} onAddToCart={handleAddToCart} />
+        </div>
+
+        {/* Giữa - giỏ hàng */}
+        <div
+          style={{
+            flex: 1.2,
+            overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <CartTable cart={cart} setCart={setCart} />
         </div>
       </Content>
 
@@ -84,13 +110,20 @@ const PosLayout = () => {
           flexDirection: "column",
           justifyContent: "space-between",
           height: "100vh",
-          overflow: "hidden", // ngắt scroll bên phải
+          overflow: "hidden",
         }}
       >
         <div>
-          <InvoiceInfo cart={cart} />
+          <InvoiceInfo cart={cart} selectedPromo={selectedPromo} />
           <div className="mt-3">
-            <CustomerSection cart={cart} clearCart={clearCart} />
+            <CustomerSection
+              cart={cart}
+              clearCart={clearCart}
+              fetchProductQuantity={fetchProductQuantity}
+              selectedPromo={selectedPromo}
+              setSelectedPromo={setSelectedPromo}
+            />
+
           </div>
         </div>
       </Sider>

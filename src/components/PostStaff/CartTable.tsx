@@ -2,6 +2,7 @@ import { Table, InputNumber, Button } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import type { CartItem } from "../../type/OrderType";
+import { calc } from "antd/es/theme/internal";
 
 
 interface CartTableProps {
@@ -56,7 +57,7 @@ const CartTable: React.FC<CartTableProps> = ({ cart, setCart }) => {
       rowKey="productId"
       pagination={false}
       size="small"
-      scroll={{ y: 300 }}
+      scroll={{ y: 'calc(100vh - 150px)' }}
     />
   );
 };

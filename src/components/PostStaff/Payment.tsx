@@ -31,6 +31,7 @@ interface PaymentProps {
   createdAt: string;
   clearCart: () => void;
   clearCustomerState: () => void;
+  fetchProductQuantity: () => Promise<void>;
 }
 
 const Payment: React.FC<PaymentProps> = ({
@@ -42,6 +43,7 @@ const Payment: React.FC<PaymentProps> = ({
   createdAt,
   clearCart,
   clearCustomerState,
+  fetchProductQuantity,
 }) => {
   const handleCreatePaymentUrlVnpay = async () => {
     if (!order?.orderId) {
@@ -70,6 +72,7 @@ const Payment: React.FC<PaymentProps> = ({
           try {
             const orderRes = await getOrderById(order.orderId);
             if (orderRes.data?.status === "paid") {
+              await fetchProductQuantity();
               toast.success("Thanh toán thành công!");
               clearInterval(interval);
               onClose();
