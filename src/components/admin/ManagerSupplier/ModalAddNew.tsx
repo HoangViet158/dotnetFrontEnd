@@ -1,7 +1,7 @@
 import React from "react";
 import { Modal, Form, Input, message, Select } from "antd";
 import { createNewSupplier } from "../../../services/Suppliers";
-import type { Supplier } from "../../../type/SuppliersType";
+import type { SupplierType } from "../../../type/SuppliersType";
 
 interface Props {
   open: boolean;
@@ -14,7 +14,7 @@ const ModalAddSupplier: React.FC<Props> = ({ open, setOpen, onSuccess }) => {
 
   const handleOk = async () => {
     try {
-      const values: Supplier = await form.validateFields();
+      const values: SupplierType = await form.validateFields();
       await createNewSupplier(values);
       message.success("Thêm nhà cung cấp thành công");
       setOpen(false);
