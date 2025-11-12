@@ -25,7 +25,7 @@ interface ProductListProps {
 }
 const ProductList: React.FC<ProductListProps> = ({ productQuantity, onAddToCart }) => {
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(8);
+  const [pageSize, setPageSize] = useState(100);
   const [search, setSearch] = useState("");
   const [sortType, setSortType] = useState("default");
   const [productList, setProductList] = useState<ProductType[]>([]);
@@ -39,7 +39,6 @@ const ProductList: React.FC<ProductListProps> = ({ productQuantity, onAddToCart 
     }
 
   };
-
 
   useEffect(() => {
     fetchDataProductList();

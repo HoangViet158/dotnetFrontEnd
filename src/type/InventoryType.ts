@@ -5,3 +5,10 @@ export interface InventoryType {
   quantity: number;
   updatedAt: string;
 }
+
+export interface InventoryDisplayType extends InventoryType {
+  categoryId: number;
+  supplierId: number;
+  categoryName: string;
+  supplierName: string;
+}
