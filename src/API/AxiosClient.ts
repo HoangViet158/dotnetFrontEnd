@@ -21,6 +21,10 @@ instance.interceptors.request.use(
 
 instance.interceptors.response.use(
   (response) => {
+     // Nếu header đánh dấu export PDF, trả nguyên response.data
+    if (response.config?.headers?.["X-Bypass-JSON-Interceptor"]) {
+      return response;
+    }
     return response?.data ?? response;
   },
   (error) => {
@@ -29,10 +33,10 @@ instance.interceptors.response.use(
 
       if (status === 401) {
         message.warning("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
-        // 🧹 Xóa token cũ
+        // Xóa token cũ
         localStorage.removeItem("token");
         localStorage.removeItem("user");
-        // ⏳ Chờ một chút để người dùng thấy thông báo
+        // Chờ một chút để người dùng thấy thông báo
         setTimeout(() => {
           window.location.href = "/login";
         }, 1500);

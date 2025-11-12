@@ -28,11 +28,7 @@ const ProductList: React.FC<ProductListProps> = ({ productQuantity, onAddToCart 
   const [pageSize, setPageSize] = useState(8);
   const [search, setSearch] = useState("");
   const [sortType, setSortType] = useState("default");
-
   const [productList, setProductList] = useState<ProductType[]>([]);
-  // const [productQuantity, setProductQuantity] = useState<InventoryType[]>([]);
-
-  
 
   const fetchDataProductList = async () => {
     const res = await getAllProducts();
