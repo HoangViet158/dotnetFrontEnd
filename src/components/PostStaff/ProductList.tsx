@@ -20,36 +20,29 @@ const { Meta } = Card;
 const { Option } = Select;
 
 interface ProductListProps {
+  productQuantity: InventoryType[]
   onAddToCart: (product: { productId: number; productName: string; price: number }) => void;
 }
-const ProductList: React.FC<ProductListProps> = ({ onAddToCart }) => {
+const ProductList: React.FC<ProductListProps> = ({ productQuantity, onAddToCart }) => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
   const [search, setSearch] = useState("");
   const [sortType, setSortType] = useState("default");
-
   const [productList, setProductList] = useState<ProductType[]>([]);
-  const [productQuantity, setProductQuantity] = useState<InventoryType[]>([]);
 
   const fetchDataProductList = async () => {
-    const res = await getProductQuantityInInventory();
-    setProductQuantity(res.data);
-    // console.log(res)
-
-  };
-
-  const fetchProductQuantity = async () => {
-    try {
-      const res = await getAllProducts();
+    const res = await getAllProducts();
+    if (res.success && res.data) {
       setProductList(res.data);
-    } catch (error) {
-      console.error("Lỗi khi lấy sản phẩm:", error);
+    } else {
+      console.error("Lỗi khi fetch products:", res.message, res.errors);
     }
+
   };
 
   useEffect(() => {
     fetchDataProductList();
-    fetchProductQuantity();
+    // fetchProductQuantity();
   }, []);
 
   // Lọc theo tên

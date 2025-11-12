@@ -32,6 +32,7 @@ interface ModelConfirmPayProps {
   createdAt: string;
   clearCart: () => void;
   clearCustomerState: () => void;
+  fetchProductQuantity: () => Promise<void>;
 }
 
 const ModelConfirmPay: React.FC<ModelConfirmPayProps> = ({
@@ -43,6 +44,7 @@ const ModelConfirmPay: React.FC<ModelConfirmPayProps> = ({
   createdAt,
   clearCart,
   clearCustomerState,
+  fetchProductQuantity,
 }) => {
   const totalQuantity = order?.items.reduce((sum, p) => sum + p.quantity, 0);
   const totalAmount = order?.items.reduce((sum, p) => sum + p.price * p.quantity, 0)
@@ -54,11 +56,15 @@ const ModelConfirmPay: React.FC<ModelConfirmPayProps> = ({
     }
 
     try {
-      await updateOrderStatus(order.orderId);
-      toast.success("Hoàn thành đơn hàng!");
-      onCancel();
-      clearCart();
-      clearCustomerState();
+      const res = await updateOrderStatus(order.orderId);
+      if (res.success) {
+        toast.success("Hoàn thành đơn hàng!");
+        await fetchProductQuantity();
+        onCancel();
+        clearCart();
+        clearCustomerState();
+      }
+     
     } catch (err: any) {
       console.error(err);
       toast.error("Lỗi!");

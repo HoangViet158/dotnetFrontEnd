@@ -1,21 +1,20 @@
 import instance from "../API/AxiosClient";
-import type { Customer } from "../type/Customer";
+import type { Customer, CustomerResponse } from "../type/Customer";
 import type { ResponseApi } from "../type/axios";
 
-// Lấy tất cả khách hàng, có phân trang / filter nếu backend hỗ trợ
-export const getAllCustomers = (): Promise<ResponseApi<Customer[]>> => {
+export const getAllCustomers = (): Promise<ResponseApi<CustomerResponse[]>> => {
   return instance.get("/customer");
 };
 
-// Thêm khách hàng mới
-export const createNewCustomer = (data: Customer) => {
+export const createNewCustomer = (data: Customer): Promise<ResponseApi<CustomerResponse>> => {
   return instance.post("/customer", data);
 };
 
 // Cập nhật khách hàng theo ID
 export const updateCustomer = (data: Customer) => {
-  if (!data.customerId) throw new Error("customerId is required for update");
-  return instance.put(`/customer/${data.customerId}`, data);
+  // if (!data.customerId) throw new Error("customerId is required for update");
+  // return instance.put(`/customer/${data.customerId}`, data);
+  return 1;
 };
 
 // Xóa khách hàng

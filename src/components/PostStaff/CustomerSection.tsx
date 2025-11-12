@@ -7,89 +7,87 @@ import {
   Form,
   Radio,
   Tooltip,
-  QRCode,
   message,
   AutoComplete,
-  Descriptions,
 } from "antd";
 import {
   PlusOutlined,
   UserOutlined,
-  QrcodeOutlined,
   GiftOutlined,
   DollarOutlined,
   CreditCardOutlined,
 } from "@ant-design/icons";
 import { toast } from "react-toastify";
-
 import Payment from "./Payment";
-import type { Customer } from "../../type/Customer";
+import type { CustomerResponse } from "../../type/Customer";
 import type { Promotion } from "../../type/Promotion";
 import type { CartItem, OrderResponse } from "../../type/OrderType";
-
 import ModelConfirmPay from "./ModelComfirmPay";
 import { createNewCustomer, getAllCustomers } from "../../services/Customer";
-import { getAllPromotions } from "../../services/Promotion";
 import { createOrder } from "../../services/Order";
-import type { ResponseApi } from "../../type/axios";
-
-
+import { getPromotionsWithMinOrderAmountGreaterThanAsync } from "../../services/Promotion";
 
 interface CustomerSectionProps {
   cart: CartItem[];
   clearCart: () => void;
+  fetchProductQuantity: () => Promise<void>;
+  selectedPromo?: Promotion | null;
+  setSelectedPromo: React.Dispatch<React.SetStateAction<Promotion | null>>;
 }
 
-const CustomerSection: React.FC<CustomerSectionProps> = ({ cart, clearCart }) => {
+const CustomerSection: React.FC<CustomerSectionProps> = ({ 
+  cart, 
+  clearCart, 
+  fetchProductQuantity ,
+  selectedPromo,
+  setSelectedPromo,
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [form] = Form.useForm();
-  const [promoCode, setPromoCode] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerResponse | null>(null);
   const clearCustomerState = () => {
     setSelectedCustomer(null);
     setSelectedPromo(null);
     setSearchValue("");
     setSearchPromo("");
   };
-  const [selectedPromo, setSelectedPromo] = useState<Promotion | null>(null);
   const [searchValue, setSearchValue] = useState<string | number>("");
   const [open, setOpen] = useState(false);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerResponse[]>([]);
   const [promotion, setPromotion] = useState<Promotion[]>([]);
   const [searchPromo, setSearchPromo] = useState<string | "">("");
   const [createdOrder, setCreatedOrder] = useState<OrderResponse | null>(null);
-
-  // 🧍 Fake dữ liệu khách hàng
-  // const selectedCustomer = {
-  //   name: "Nguyễn Văn A",
-  //   phone: "0901234567",
-  //   email: "nguyenvana@gmail.com",
-  //   address: "123 Nguyễn Trãi, Quận 1, TP.HCM",
-  // };
   const fakeCreatedBy = "Admin Nguyễn";
   const fakeCreatedAt = "11/10/2025 14:35";
 
   const fetchCustomer = async () => {
     const res = await getAllCustomers();
-    setCustomers(res.data);
-    console.log(res.data)
+    if (res.success && res.data) {
+      setCustomers(res.data);
+    } else {
+      console.error("Lỗi khi fetch customers:", res.message, res.errors);
+    }
   };
+
+  const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const fetchPromotion = async () => {
-    const res = await getAllPromotions();
-    setPromotion(res.data);
+    const res = await getPromotionsWithMinOrderAmountGreaterThanAsync(totalPrice);
+    if (res.success && res.data){
+      setPromotion(res.data);
+    } else {
+      console.error("Lỗi khi fetch promotions:", res.message, res.errors);
+    }
   };
 
-  //
   useEffect(() => {
     fetchCustomer();
     fetchPromotion();
-  }, []);
+  }, [cart]);
 
-  // 🔹 Lọc khách hàng theo từ khóa
+  // Lọc khách hàng theo từ khóa
   const searchStr = String(searchValue || "").toLowerCase();
   const filteredCustomers = customers
     .filter(
@@ -112,56 +110,43 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ cart, clearCart }) =>
       promotion: promo,
     }));
 
-  // ✅ Lưu thông tin khách hàng
-  const handleOk = async () => {
-    try {
-      // // Validate form
-      // const values = await form.validateFields();
-
-      // // Gọi API tạo khách mới
-      // const newCustomer = await createNewCustomer({
-      //   name: values.name,
-      //   phone: values.phone || null,
-      //   email: values.email || null,
-      //   address: values.address || null,
-      // } as Customers);
-
-      // // Thêm khách mới vào state
-      // setCustomers((prev) => [...prev, newCustomer]);
-
-      // // Chọn khách mới luôn
-      // setSelectedCustomer(newCustomer);
-      // setSearchValue(`${newCustomer.customerId} - ${newCustomer.name}`);
-
-      // Reset form và đóng modal
-      setIsModalOpen(false);
-      form.resetFields();
-      setPromoCode("");
-      setDiscount(0);
-
-      // message.success(`✅ Thêm khách hàng ${newCustomer.data} thành công!`);
-      // console.log("Khách hàng mới:", newCustomer);
-    } catch (error: any) {
-      message.error(`❌ Thêm khách hàng thất bại: ${error.message || error}`);
-      console.error(error);
-    }
-  };
-
-  // const handlePaymentConfirm = () => {
-  //   message.success("Thanh toán ví điện tử đã xác nhận!");
-  //   setIsQRModalOpen(false);
-  // };
-
   const handleSelectCustomer = (value: string | number, option: any) => {
     setSelectedCustomer(option.customer);
     message.success(`Đã chọn khách hàng: ${option.customer.name}`);
     setSearchValue(`${option.customer.customerId} - ${option.customer.name}`);
   };
+
   const handleSelectPromotion = (value: string | number, option: any) => {
     setSelectedPromo(option.promotion);
     setSearchPromo(
       `${option.promotion.promoCode} - ${option.promotion.description}`
     );
+  };
+
+  // Lưu thông tin khách hàng
+  const handleCreateCustomer = async () => {
+    try {
+      const values = await form.validateFields();
+
+      const customerData = {
+        name: values.name,
+        phone: values.phone,
+        email: values.email || null,
+        address: values.address || null,
+      };
+
+      const res = await createNewCustomer(customerData);
+
+      setCustomers((prev) => [...prev, res.data]);
+      setSelectedCustomer(res.data);
+      setSearchValue(`${res.data.customerId} - ${res.data.name} - ${res.data.phone}`);
+      setIsModalOpen(false);
+      form.resetFields();
+      toast.success('Thêm khách hàng  ${res.data.name} thành công!');
+    } catch (error: any) {
+      message.error(`Thêm khách hàng thất bại: ${error.message || error}`);
+      console.error(error);
+    }
   };
 
   const fakeUserId = 5; //tạm thời hardcode, sau có thể lấy từ context hoặc session
@@ -232,21 +217,21 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ cart, clearCart }) =>
 
         {/* Hiển thị khách hàng đã chọn */}
         {selectedCustomer && (
-          <div className="bg-gray-50 p-2 rounded-md mb-3 text-sm">
-            <div>
-              <strong>Tên:</strong> {selectedCustomer.name}
-            </div>
-            <div>
-              <strong>SDT:</strong> {selectedCustomer.phone}
-            </div>
-            <div>
-              <strong>Email:</strong> {selectedCustomer.email}
-            </div>
-            <div>
-              <strong>Địa chỉ:</strong> {selectedCustomer.address}
-            </div>
+          <div className="bg-gray-50 p-3 rounded-md mb-3 text-sm shadow-sm">
+            {[
+              { label: "Tên", value: selectedCustomer.name },
+              { label: "SDT", value: selectedCustomer.phone },
+              { label: "Email", value: selectedCustomer.email },
+              { label: "Địa chỉ", value: selectedCustomer.address },
+            ].map((item, index) => (
+              <div key={index} className="flex justify-between py-1 border-b last:border-none">
+                <strong>{item.label}:</strong>
+                <span className="text-gray-700">{item.value}</span>
+              </div>
+            ))}
           </div>
         )}
+
 
         {/* Ô nhập mã khuyến mãi */}
         <div className="flex gap-2 mb-3">
@@ -262,11 +247,6 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ cart, clearCart }) =>
               prefix={<GiftOutlined />}
             />
           </AutoComplete>
-
-          <Button type="default">
-            {/* <Button type="default" onClick={handleApplyPromo}> */}
-            Áp dụng
-          </Button>
         </div>
         {/* Hiển thị khuyến mãi đã chọn với nút X */}
         {selectedPromo && (
@@ -283,7 +263,6 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ cart, clearCart }) =>
               onClick={() => {
                 setSelectedPromo(null);
                 setSearchPromo("");
-                setDiscount(0);
               }}
             >
               ×
@@ -303,11 +282,9 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ cart, clearCart }) =>
 
         {paymentMethod === "bank_transfer" && (
           <Button
-            // icon={<QrcodeOutlined />}
             type="primary"
             block
             style={{ marginTop: 12 }}
-            // onClick={() => setIsQRModalOpen(true)}
             onClick={async () => {
               await handleCreateOrder()
             }}
@@ -334,7 +311,7 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ cart, clearCart }) =>
       <Modal
         title="Thêm khách hàng mới"
         open={isModalOpen}
-        onOk={handleOk}
+        onOk={handleCreateCustomer}
         onCancel={() => setIsModalOpen(false)}
         okText="Lưu"
         cancelText="Hủy"
@@ -371,6 +348,7 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ cart, clearCart }) =>
         createdAt={fakeCreatedAt}
         clearCart={clearCart}
         clearCustomerState={clearCustomerState}
+        fetchProductQuantity={fetchProductQuantity}
       />
 
 
@@ -383,6 +361,7 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({ cart, clearCart }) =>
         createdAt={fakeCreatedAt}
         clearCart={clearCart}
         clearCustomerState={clearCustomerState}
+        fetchProductQuantity={fetchProductQuantity}
       />
     </>
   );
