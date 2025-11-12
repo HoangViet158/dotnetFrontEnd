@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import {
   Modal,
   Typography,
@@ -9,9 +9,8 @@ import {
   Button,
   Space,
 } from "antd";
-import type { CartItem, OrderResponse } from "../../type/OrderType";
-import type { ResponseApi } from "../../type/axios";
-import { updateOrderStatus } from "../../services/Order";
+import type { OrderResponse } from "../../type/OrderType";
+import { exportOrderToPdf, updateOrderStatus } from "../../services/Order";
 import { toast } from "react-toastify";
 
 const { Title, Text } = Typography;
@@ -59,6 +58,7 @@ const ModelConfirmPay: React.FC<ModelConfirmPayProps> = ({
       const res = await updateOrderStatus(order.orderId);
       if (res.success) {
         toast.success("Hoàn thành đơn hàng!");
+        await exportOrderToPdf(order.orderId);
         await fetchProductQuantity();
         onCancel();
         clearCart();
