@@ -11,7 +11,7 @@ import {
 import type { OrderResponse } from "../../type/OrderType";
 import { toast } from "react-toastify";
 import { createPaymentUrlVnpay } from "../../services/Payment";
-import { exportOrderToPdf, getOrderById } from "../../services/Order";
+import { exportOrderToPdfAndSendToEmail, getOrderById } from "../../services/Order";
 
 const { Title, Text } = Typography;
 
@@ -73,7 +73,7 @@ const Payment: React.FC<PaymentProps> = ({
             const orderRes = await getOrderById(order.orderId);
             if (orderRes.data?.status === "paid") {
               await fetchProductQuantity();
-              await exportOrderToPdf(order.orderId);
+              await exportOrderToPdfAndSendToEmail(order.orderId);
               toast.success("Thanh toán thành công!");
               clearInterval(interval);
               onClose();

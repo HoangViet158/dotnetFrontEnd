@@ -16,23 +16,27 @@ export const getOrderById = (orderId: number): Promise<ResponseApi<OrderResponse
   return instance.get(`/orders/${orderId}`);
 };
 
-export const exportOrderToPdf = async (orderId: number): Promise<void> => {
-  const response = await instance.get(`/orders/${orderId}/export-pdf`, {
-    responseType: "blob",
-    headers: { "X-Bypass-JSON-Interceptor": "true" },
-    transformResponse: [(data) => data],
-  });
-
-  // Lấy Blob từ response.data
-  const blob = response.data as Blob;
-
-  const fileURL = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = fileURL;
-  link.setAttribute("download", `Order_${orderId}.pdf`);
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+export const exportOrderToPdfAndSendToEmail = async (orderId: number) : Promise<ResponseApi<string>> => {
+  return instance.post(`/orders/${orderId}/send-pdf`);
 };
+
+// export const exportOrderToPdf = async (orderId: number): Promise<void> => {
+//   const response = await instance.get(`/orders/${orderId}/export-pdf`, {
+//     responseType: "blob",
+//     headers: { "X-Bypass-JSON-Interceptor": "true" },
+//     transformResponse: [(data) => data],
+//   });
+
+//   // Lấy Blob từ response.data
+//   const blob = response.data as Blob;
+
+//   const fileURL = window.URL.createObjectURL(blob);
+//   const link = document.createElement("a");
+//   link.href = fileURL;
+//   link.setAttribute("download", `Order_${orderId}.pdf`);
+//   document.body.appendChild(link);
+//   link.click();
+//   link.remove();
+// };
 
 
