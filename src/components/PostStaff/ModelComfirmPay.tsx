@@ -10,7 +10,7 @@ import {
   Space,
 } from "antd";
 import type { OrderResponse } from "../../type/OrderType";
-import { exportOrderToPdf, updateOrderStatus } from "../../services/Order";
+import { exportOrderToPdfAndSendToEmail, updateOrderStatus } from "../../services/Order";
 import { toast } from "react-toastify";
 
 const { Title, Text } = Typography;
@@ -57,17 +57,32 @@ const ModelConfirmPay: React.FC<ModelConfirmPayProps> = ({
     try {
       const res = await updateOrderStatus(order.orderId);
       if (res.success) {
-        toast.success("Hoàn thành đơn hàng!");
-        await exportOrderToPdf(order.orderId);
+        const pdfRes = await exportOrderToPdfAndSendToEmail(order.orderId);
+
+        if (!pdfRes.success) {
+          toast.error(pdfRes.message || "Lỗi khi gửi hóa đơn!");
+        }
+
         await fetchProductQuantity();
+        toast.success("Hoàn thành đơn hàng!");
         onCancel();
         clearCart();
         clearCustomerState();
       }
      
     } catch (err: any) {
-      console.error(err);
-      toast.error("Lỗi!");
+      if (err?.message) {
+        toast.error(err.message); // message backend trả về
+      } else if (err?.response?.message) {
+        toast.error(err.response.message);
+      } else {
+        toast.error("Lỗi!");
+      }
+
+      await fetchProductQuantity();
+      onCancel();
+      clearCart();
+      clearCustomerState();
     }
   };
 
